@@ -41,7 +41,7 @@ class ReadGrid:
         """(9, 9) probability of the read digit; 0 for blank cells."""
         return self.probs.max(axis=2)
 
-    def top_k(self, r: int, c: int, k: int = 3) -> list:
+    def top_k(self, r: int, c: int, k: int = config.HARD_TOPK) -> list:
         """The k most probable (digit, probability) pairs of cell (r, c), best first."""
         order = np.argsort(-self.probs[r, c])[:k]
         return [(int(class_to_digit(i)), float(self.probs[r, c, i])) for i in order]

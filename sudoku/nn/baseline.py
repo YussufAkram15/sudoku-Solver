@@ -12,13 +12,13 @@ def flatten(images) -> np.ndarray:
     return images.reshape(len(images), -1)
 
 
-def train_logreg(train_images, train_classes, subset: int = config.LOGREG_TRAIN_SUBSET,
+def train_logreg(train_images, train_classes, subset: int | None = config.LOGREG_TRAIN_SUBSET,
                  seed: int = config.SEED) -> LogisticRegression:
-    """Fit softmax regression on a seeded random subset of the training split.
+    """Fit softmax regression on the training split (or a seeded random subset of ``subset`` images).
 
     With the lbfgs solver and 9 classes scikit-learn fits the multinomial (softmax) model.
     """
-    idx = config.make_rng(seed).permutation(len(train_classes))[:subset]
+    idx = config.make_rng(seed).permutation(len(train_classes))[:subset]  # [:None] = all
     model = LogisticRegression(max_iter=config.LOGREG_MAX_ITER, random_state=seed)
     model.fit(flatten(train_images[idx]), np.asarray(train_classes)[idx])
     return model

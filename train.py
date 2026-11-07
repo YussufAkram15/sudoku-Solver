@@ -11,6 +11,7 @@ Steps (seeded with --seed, default config.SEED):
    misread / clean pool masks to data/processed/digit_pools.npz (see DATA_DICTIONARY.md section 5).
 
 Usage:  python train.py [--seed 7] [--quick]
+--seed seeds training only; the train/validation split comes from make_data.py's seed (printed).
 --quick trains on a small subset for 1 epoch and writes to models/quick, results/nn/quick and
 data/processed/digit_pools_quick.npz, so it never overwrites the real models.
 """
@@ -68,6 +69,8 @@ def main() -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
 
     splits = mnist.load_splits()
+    print(f"MNIST split made by make_data.py with seed {mnist.split_seed()} "
+          f"(--seed here only seeds training)")
     train, val, test = splits["train"], splits["val"], splits["test"]
     if args.quick:
         keep = config.make_rng(args.seed).permutation(len(train))[: config.QUICK_TRAIN_SUBSET]
@@ -84,7 +87,8 @@ def main() -> None:
     t_cnn = calibration.fit_temperature(cnn_val, val.classes)
     print(f"  CNN T = {t_cnn:.3f}")
 
-    print(f"[3/6] logistic regression on {min(lr_subset, len(train))} raw-pixel images")
+    lr_size = len(train) if lr_subset is None else min(lr_subset, len(train))
+    print(f"[3/6] logistic regression on {lr_size} raw-pixel images")
     start = time.perf_counter()
     logreg = baseline.train_logreg(train.images, train.classes, lr_subset, args.seed)
     lr_seconds = time.perf_counter() - start
@@ -100,6 +104,7 @@ def main() -> None:
         evaluate("logreg", lr_test, y, 1.0),
         evaluate("logreg+temperature", lr_test, y, t_lr),
     ])
+    metrics["train_size"] = [len(train), len(train), lr_size, lr_size]
     metrics["train_seconds"] = [cnn_seconds, cnn_seconds, lr_seconds, lr_seconds]
     metrics.to_csv(out_dir / "metrics.csv", index=False)
     print(metrics.to_string(index=False, float_format=lambda v: f"{v:.4f}"))

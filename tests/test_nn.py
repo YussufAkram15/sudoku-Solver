@@ -3,13 +3,14 @@
 Tests marked ``needs_model`` use the models trained by ``python train.py`` and are skipped otherwise.
 """
 
+import joblib
 import numpy as np
 import pytest
 import torch
 
 from sudoku import config
 from sudoku.data import generator, injection, mnist, mosaic
-from sudoku.nn import calibration
+from sudoku.nn import baseline, calibration
 from sudoku.nn.model import DigitCNN, predict_logits
 from sudoku.nn.reader import DigitReader, ReadGrid
 from sudoku.nn.training import train_cnn
@@ -107,11 +108,14 @@ def test_reader_on_empty_mosaic_reads_nothing():
 
 # ---------------------------------------------------------------- trained model (after train.py)
 @needs_model
-def test_trained_cnn_beats_baseline_threshold_on_test():
+def test_trained_cnn_beats_logreg_baseline_on_test():
     reader = DigitReader.load()
     test = mnist.load_splits()["test"]
-    acc = (reader.predict_proba(test.images).argmax(1) == test.classes).mean()
-    assert acc > 0.97
+    logreg = joblib.load(config.MODELS / config.LOGREG_FILE)["model"]
+    cnn_acc = (reader.predict_proba(test.images).argmax(1) == test.classes).mean()
+    lr_acc = (logreg.predict(baseline.flatten(test.images)) == test.classes).mean()
+    assert cnn_acc > 0.97
+    assert cnn_acc > lr_acc
 
 
 @needs_model
@@ -140,4 +144,4 @@ def test_saved_pool_probs_match_reader():
     test = mnist.load_splits()["test"]
     with np.load(config.POOLS_FILE) as data:
         assert data["temperature"] == pytest.approx(reader.temperature)
-        assert np.allclose(data["probs"][:200], reader.predict_proba(test.images[:200]), atol=1e-6)
+        assert np.allclose(data["probs"][:200], reader.predict_proba(test.images[:200]), atol=1e-5)

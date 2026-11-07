@@ -68,8 +68,8 @@ CNN_CONV_CHANNELS = (16, 32)
 CNN_HIDDEN = 128
 CNN_KERNEL = 3                 # conv kernel size (padding keeps 28x28 before each 2x2 max-pool)
 CNN_EVAL_BATCH = 1024          # batch size when only predicting (no gradients)
-LOGREG_MAX_ITER = 1000         # lbfgs converges in ~205 iterations on the 20k subset
-LOGREG_TRAIN_SUBSET = 20_000   # logistic regression on raw pixels is slow; subset of the train split
+LOGREG_MAX_ITER = 1000         # cap for lbfgs; it converges well before this on MNIST pixels
+LOGREG_TRAIN_SUBSET = None     # None = whole train split (same data as the CNN, fair baseline)
 ECE_BINS = 15
 USE_TEMPERATURE = True         # reader applies temperature scaling fitted on validation
 TEMPERATURE_BOUNDS = (0.05, 20.0)  # search range for the fitted temperature T
