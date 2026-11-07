@@ -1,0 +1,91 @@
+"""Central configuration: every seed, threshold, path and limit lives here.
+
+No other module should hard-code a tunable number. Import as::
+
+    from sudoku import config
+    config.SEED
+"""
+
+from pathlib import Path
+import random
+
+import numpy as np
+
+# ---------------------------------------------------------------- seeds
+SEED = 7  # team generator seed; every random step derives from this by default
+
+# ---------------------------------------------------------------- paths
+ROOT = Path(__file__).resolve().parent.parent
+DATA_RAW = ROOT / "data" / "raw"              # MNIST download (git-ignored)
+DATA_PROCESSED = ROOT / "data" / "processed"  # splits, puzzle banks, digit pools (git-ignored)
+MODELS = ROOT / "models"                      # trained CNN / baseline weights
+RESULTS = ROOT / "results"                    # CSV tables + PNG plots (committed)
+
+# ---------------------------------------------------------------- data
+N_TRAIN = 50_000        # images kept for training, taken from MNIST train (digits 1-9)
+N_VAL = 10_000          # validation images, also from MNIST train; MNIST test stays untouched
+DIGITS = tuple(range(1, 10))   # digit 0 is dropped; class index = digit - 1
+N_CLASSES = 9
+TILE = 28               # MNIST image side in pixels
+GRID = 9                # sudoku side length
+BOX = 3                 # sub-box side length
+
+GIVEN_TARGETS = (25, 30, 35)          # number of givens in generated puzzles
+DEFAULT_GIVENS = 30                   # used by the demo and the search/correction experiments
+GENERATOR_MAX_ATTEMPTS = 20           # new full grids to try if a given-count target is not reached
+BLANK_THRESHOLD = 0.01                # tile mean pixel (0..1) below this = empty cell
+
+# ---------------------------------------------------------------- hard-digit injection
+MISREAD_LEVELS = (0, 1, 2, 3, 4)
+HARD_PROB_THRESHOLD = 0.6   # pool rule from the brief: wrong read, or top-1 prob below this
+HARD_TOPK = 3               # ...and the true digit must be within the model's top-k
+
+# ---------------------------------------------------------------- neural network
+CNN_EPOCHS = 3
+CNN_BATCH_SIZE = 128
+CNN_LR = 1e-3
+CNN_CONV_CHANNELS = (16, 32)
+CNN_HIDDEN = 128
+LOGREG_MAX_ITER = 200
+LOGREG_TRAIN_SUBSET = 20_000   # logistic regression on raw pixels is slow; subset of the train split
+ECE_BINS = 15
+USE_TEMPERATURE = True         # reader applies temperature scaling fitted on validation
+
+# ---------------------------------------------------------------- CSP
+ORDERING = "static"     # "static" (row-major) or "mrv"; identical in every BT/FC/AC-3 mode
+USE_MAC = False         # extension: maintain arc consistency during search
+CSP_NODE_LIMIT = 200_000    # max assignments before status "timeout"
+CSP_TIME_LIMIT = 10.0       # seconds before status "timeout"
+
+# ---------------------------------------------------------------- correction search
+CANDIDATE_CELLS = 15     # least-confident given cells that may be corrected
+ALTS_PER_CELL = 3        # top-k non-current digits tried per candidate cell
+MAX_CORRECTIONS = 3      # max cells changed in one correction set
+SEARCH_NODE_LIMIT = 5_000    # max nodes expanded before giving up ("unreadable")
+SEARCH_TIME_LIMIT = 60.0     # seconds before giving up
+GOAL_MODE = "unique"     # "unique" = exactly one solution, "solvable" = at least one
+DEFAULT_ALGORITHM = "astar"   # "ucs", "greedy" or "astar"
+RANDOM_TRIALS = 200      # random-correction baseline: correction sets tried
+N_UNREADABLE_REPORT = 5  # least-confident cells listed when no correction works
+
+# ---------------------------------------------------------------- experiments
+N_SEEDS = 5
+PUZZLES_PER_SEED = 20    # 5 seeds x 20 = 100 puzzles per misread level
+QUICK_SEEDS = 2
+QUICK_PUZZLES = 3
+
+
+def set_seed(seed: int = SEED) -> None:
+    """Seed Python, NumPy and (if installed) PyTorch global generators."""
+    random.seed(seed)
+    np.random.seed(seed)
+    try:
+        import torch
+    except ImportError:  # CSP/search code runs without torch
+        return
+    torch.manual_seed(seed)
+
+
+def make_rng(seed: int = SEED) -> np.random.Generator:
+    """Return a fresh, independent NumPy generator for one random task."""
+    return np.random.default_rng(seed)
