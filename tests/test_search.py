@@ -218,6 +218,10 @@ def test_random_baseline_is_seeded_and_uses_same_goal_test():
     assert a.stats.goal_tests == len(a.trace) <= 51
     if not a.found:  # 1 root + 50 random sets, each generated set was tested
         assert a.stats.goal_tests == 51 and a.stats.nodes_generated == 50
+    inside = random_correction(problem, config.make_rng(2), trials=30, candidates_only=True)
+    for t in inside.trace:  # only candidate cells and their top-3 alternatives are tried
+        for cell, digit in t.state:
+            assert digit in [a.digit for a in problem.alternatives[cell]]
     clean_grid, clean_probs = make_reading()
     r = random_correction(CorrectionProblem(clean_grid, clean_probs), config.make_rng(0))
     assert r.found and r.state == frozenset()  # read grid already fine

@@ -8,8 +8,10 @@ Experiment 1  UCS vs Greedy vs A*: nodes expanded / generated / pruned, goal tes
               recovery for misread levels 0-4 (30-given puzzles).
 Experiment 2  BT vs BT+FC vs BT+FC+AC-3 (+ MAC, extension) with static variable order on the
               25 / 30 / 35-given bank puzzles: assignments, backtracks, time, timeouts.
-Experiment 3  NN-guided correction (A*) vs no correction (NN off) vs random correction, plus the
-              extension arm "NN-guided without temperature scaling": exact recovery per level.
+Experiment 3  NN-guided correction (A*) vs no correction (NN off) vs random correction (any
+              given, any digit), plus extension arms "random within the 15 candidate cells and
+              their top-3 alternatives" (isolates the value of NN cost ordering) and
+              "NN-guided without temperature scaling": exact recovery per level.
 Recovery      NN-guided (A*) exact-solution recovery on 100 puzzles per misread level, with a
               breakdown that adds up to the number of puzzles: exact without corrections /
               exact after corrections / wrong solution (a grid was produced but it is not the
@@ -35,7 +37,8 @@ CSP_MODES = {
     "BT+FC+AC-3": dict(use_fc=True, use_ac3=True),
     "BT+FC+AC-3+MAC (ext.)": dict(use_fc=True, use_ac3=True, use_mac=True),
 }
-EXP3_ARMS = ("nn_guided", "no_correction", "random", "nn_guided_no_T (ext.)")
+EXP3_ARMS = ("nn_guided", "no_correction", "random", "random_in_candidates (ext.)",
+             "nn_guided_no_T (ext.)")
 
 
 def instance_rng(seed: int, s: int, k: int, i: int, *extra) -> np.random.Generator:
@@ -72,7 +75,7 @@ def run_reading_experiments(reader, reader_no_t, test_images, pools, puzzles, so
                     st = r.search.stats if r.search else None
                     exp1.append({**base, "algorithm": a, "status": r.status,
                                  "exact": r.exact_recovery(truth),
-                                 "n_corrections": len(r.corrections),
+                                 "n_corrections": len(r.corrections) if r.solved else np.nan,
                                  "cost": r.total_cost if r.solved else np.nan,
                                  "search_status": r.search.status if r.search else "none",
                                  "nodes_expanded": st.nodes_expanded if st else 0,
@@ -91,10 +94,13 @@ def run_reading_experiments(reader, reader_no_t, test_images, pools, puzzles, so
                 for arm, r in arms.items():
                     exp3.append({**base, "arm": arm, "status": r.status,
                                  "exact": r.exact_recovery(truth)})
-                rand = random_correction(CorrectionProblem(read.grid, read.probs),
-                                         instance_rng(seed, s, k, i, config.RANDOM_ARM_SEED_OFFSET))
-                exp3.append({**base, "arm": "random", "status": rand.status,
-                             "exact": rand.solution is not None and np.array_equal(rand.solution, truth)})
+                for arm, only in (("random", False), ("random_in_candidates (ext.)", True)):
+                    rng_arm = instance_rng(seed, s, k, i, config.RANDOM_ARM_SEED_OFFSET + only)
+                    rand = random_correction(CorrectionProblem(read.grid, read.probs), rng_arm,
+                                             candidates_only=only)
+                    exp3.append({**base, "arm": arm, "status": rand.status,
+                                 "exact": rand.solution is not None
+                                 and np.array_equal(rand.solution, truth)})
             log(f"  seed {s} level {k}: {per_seed} puzzles in {time.perf_counter() - start:.1f}s")
     return pd.DataFrame(exp1), pd.DataFrame(exp3)
 

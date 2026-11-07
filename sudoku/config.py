@@ -102,7 +102,7 @@ MAX_CORRECTIONS = 3      # max cells changed in one correction set
 # 1 + 45 + 945 + 12,285 = 13,276 states. The node cap sits above that, so "unreadable" normally
 # means the 3-correction budget is exhausted; hitting a cap is reported as its own stop reason.
 SEARCH_NODE_LIMIT = 15_000   # max nodes expanded before stopping with reason "node_limit"
-SEARCH_TIME_LIMIT = 60.0     # seconds before stopping with reason "time_limit" (revisit in Phase 8)
+SEARCH_TIME_LIMIT = 60.0     # seconds before stopping with reason "time_limit" (never hit in the full experiments)
 GOAL_MODE = "unique"     # "unique" = exactly one solution, "solvable" = at least one
 # CSP settings for the goal test (it can run thousands of times per puzzle, so it uses the fastest
 # solver setup; Experiment 2 compares BT / FC / AC-3 separately with ORDERING above).

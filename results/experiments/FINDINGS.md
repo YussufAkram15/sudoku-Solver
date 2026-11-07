@@ -4,6 +4,11 @@
 100 puzzles per given count for Experiment 2. Runtime ≈ 3.5 min on a 12-core CPU. Every number below
 comes from the CSVs in this folder; "±" is the standard deviation over the 5 seeds.
 
+What a "seed" is: seed s uses its own slice of 20 bank puzzles (puzzles 20s .. 20s+19, all made
+with generator seed 7) and its own mosaic / injection / random-baseline draws. The CNN is trained
+once and the CSP has no randomness, so the spread is over puzzle subsets and image draws, not over
+retrained models or regenerated banks.
+
 ## Exact-solution recovery (P7 deliverable) — `recovery.csv`, `recovery.png`
 
 | Misreads | Exact | Exact w/o correction | Exact after correction | Wrong solution | Unreadable |
@@ -21,7 +26,8 @@ comes from the CSVs in this folder; "±" is the standard deviation over the 5 se
   another valid puzzle with a unique solution, which no consistency check can detect. At levels
   2–3 the search found a different correction set whose puzzle is also uniquely solvable.
 - Level 4 exceeds the 3-correction budget by design: 60 puzzles end "unreadable", 40 end with a
-  wrong solution found within 3 corrections.
+  wrong solution found within 3 corrections. The uniqueness goal cannot catch these: the
+  corrected puzzle really has exactly one solution, just not the original one.
 - The misread pool has only 133 test images (8–32 per digit), so the same hard images recur
   across the 100 puzzles.
 
@@ -30,7 +36,8 @@ comes from the CSVs in this folder; "±" is the standard deviation over the 5 se
 - Nodes expanded (mean ± std): level 1: UCS 2.0, Greedy 1.2, A* 1.1; level 2: 8.8 / 6.4 / 3.5;
   level 3: 52.5 / 23.3 / 11.2; level 4 (exhausted): 8,200 / 2,130 / 2,150.
 - A* always found the same cost as UCS (optimal); Greedy found a more expensive correction set in
-  26 of 440 puzzles both solved, and has lower recovery at levels 2–3 (84 %, 77 % vs 89 %, 87 %).
+  26 of 440 puzzles both solved (mean cost of solved puzzles, `cost_mean` in `exp1_summary.csv`:
+  level 3 A* 4.56 vs Greedy 5.32), and has lower recovery at levels 2–3 (84 %, 77 % vs 89 %, 87 %).
 - Part of A*/Greedy's saving comes from pruning children with h = ∞ (an unfixable duplicate),
   reported separately as `nodes_pruned`; UCS never prunes. On exhausted searches UCS's "expanded"
   includes every 3-correction leaf.
@@ -54,13 +61,19 @@ means BT+FC+AC-3 is not always faster in seconds than BT+FC on easy (35-given) p
 
 ## Experiment 3 — NN-guided vs no correction vs random (`exp3_summary.csv`, `exp3_recovery.png`)
 
-| Misreads | NN-guided (A*) | No correction | Random (200 sets) | NN-guided, no temperature (ext.) |
-|---|---|---|---|---|
-| 0 | 100 % | 100 % | 100 % | 100 % |
-| 1 | 95 % | 0 % | 28 % | 95 % |
-| 2 | 89 % | 0 % | 0 % | 89 % |
-| 3 | 87 % | 0 % | 0 % | 87 % |
-| 4 | 0 % | 0 % | 0 % | 0 % |
+| Misreads | NN-guided (A*) | No correction | Random (any given) | Random within candidates (ext.) | NN-guided, no T (ext.) |
+|---|---|---|---|---|---|
+| 0 | 100 % | 100 % | 100 % | 100 % | 100 % |
+| 1 | 95 % | 0 % | 28 % | 66 % | 95 % |
+| 2 | 89 % | 0 % | 0 % | 9 % | 89 % |
+| 3 | 87 % | 0 % | 0 % | 0 % | 87 % |
+| 4 | 0 % | 0 % | 0 % | 0 % | 0 % |
+
+Both random arms get up to 200 goal tests per puzzle; A* needs on average 2.1 / 4.5 / 12.2
+(max 48) at levels 1 / 2 / 3. "Random
+within candidates" may only choose the same 15 cells and top-3 alternatives the search uses, so
+the gap to NN-guided (66 vs 95 %, 9 vs 89 %, 0 vs 87 %) is the value of ordering corrections by
+NN cost, beyond what the candidate cut-off already gives.
 
 Temperature scaling (T = 0.868) made no difference to recovery, and this is expected: a step cost
 is log p(r) − log p(d) = (z_r − z_d) / T for logits z, so every cost is multiplied by the same 1/T

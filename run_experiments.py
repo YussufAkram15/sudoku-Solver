@@ -29,8 +29,9 @@ from sudoku.nn.reader import DigitReader  # noqa: E402
 from sudoku.search import ALGORITHMS  # noqa: E402
 
 LEVELS = list(config.MISREAD_LEVELS)
+# cost / n_corrections are NaN for unsolved puzzles, so their means cover solved puzzles only
 EXP1_METRICS = ["nodes_expanded", "nodes_generated", "nodes_pruned", "goal_tests", "csp_calls",
-                "seconds", "exact"]
+                "seconds", "cost", "n_corrections", "exact"]
 EXP2_METRICS = ["assignments", "backtracks", "ac3_revisions", "values_pruned", "seconds",
                 "timeout", "correct"]
 
@@ -74,8 +75,10 @@ def plot_exp2(summary, out) -> None:
 def plot_exp3(summary, out) -> None:
     labels = {"nn_guided": f"NN-guided ({config.DEFAULT_ALGORITHM.upper()})",
               "no_correction": "no correction (NN off)", "random": "random correction",
+              "random_in_candidates (ext.)": "random within candidates (ext.)",
               "nn_guided_no_T (ext.)": "NN-guided, no temperature (ext.)"}
-    colors = dict(zip(labels.values(), ["tab:green", "tab:red", "tab:gray", "tab:olive"]))
+    colors = dict(zip(labels.values(),
+                      ["tab:green", "tab:red", "tab:gray", "silver", "tab:olive"]))
     data = series(summary, "arm", ex.EXP3_ARMS, "exact", LEVELS, "level")
     fig, ax = plt.subplots(figsize=(10, 4))
     grouped_bars(ax, LEVELS, {labels[arm]: v for arm, v in data.items()},
@@ -83,7 +86,7 @@ def plot_exp3(summary, out) -> None:
                  colors=colors, label_values=True)
     ax.set_xlabel("injected misreads")
     ax.set_ylim(0, 1.15)
-    ax.legend(fontsize=8, ncol=4, loc="upper right")
+    ax.legend(fontsize=7, ncol=3, loc="upper right")
     save(fig, out / "exp3_recovery.png")
 
 
