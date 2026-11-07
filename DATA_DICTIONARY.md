@@ -131,3 +131,52 @@ Pool sizes with the default seed 7 (also in `results/nn/pool_sizes.csv`; CNN tes
 
 The misread pool is small (8–32 images per digit), so across 100 puzzles the same hard image is
 reused many times. Every digit has at least one, so every given cell is eligible for injection.
+
+## 6. Trained models — `models/` (GENERATED, git-ignored)
+
+Written by `train.py` (`--quick` writes `models/quick/` instead).
+
+| File | Content |
+|---|---|
+| `cnn.pt` | PyTorch `state_dict` of the CNN (`sudoku/nn/model.py`) |
+| `cnn_meta.json` | `temperature` (fitted on validation), `seed`, `epochs`, `train_size`, per-epoch `history`, `test_accuracy` |
+| `logreg.joblib` | dict `{"model": LogisticRegression, "temperature": float}` for the baseline |
+
+## 7. Results — `results/` (GENERATED, committed)
+
+All results are computed from REAL MNIST test images placed into GENERATED puzzles; no field is
+taken directly from a data set.
+
+### `results/data/`, `results/demo/`
+PNG figures only: `sample_mosaic.png` (make_data.py) and the four `demo_*.png` of
+`python run_demo.py` with default arguments (seed 7, 2 misreads).
+
+### `results/nn/` (train.py, MNIST test split, digits 1–9)
+
+| File | Columns / content |
+|---|---|
+| `metrics.csv` | `model` (cnn, cnn+temperature, logreg, logreg+temperature), `temperature`, `accuracy`, `nll` (mean negative log-likelihood), `ece` (15 equal-width bins), `train_size`, `train_seconds` |
+| `cnn_history.csv` | `epoch`, `train_loss` (mean cross-entropy), `val_acc`, `seconds` |
+| `confusion_cnn.csv`, `confusion_logreg.csv` | 9×9 counts, rows = true digit 1–9, columns = predicted digit 1–9 |
+| `pool_sizes.csv` | `digit` (1–9 or `all`), `hard`, `misread`, `clean`: test images per pool (§5) |
+| `confusion_*.png`, `reliability.png` | confusion matrices; reliability diagrams for all four model variants |
+
+### `results/experiments/` (run_experiments.py)
+
+"Seed" `s` = run number 0–4: bank puzzles `20s .. 20s+19` and mosaics seeded with
+`(SEED, s, level, i)`. Per-puzzle files have one row per (seed, puzzle, method); summary files
+hold, for each group, the mean over the puzzles of each seed, then `<metric>_mean` and
+`<metric>_std` (sample std, ddof = 1) over the `n_seeds` seeds.
+
+| File | Columns |
+|---|---|
+| `exp1_per_puzzle.csv` | `seed`, `level` (injected misreads), `puzzle` (bank index, 30 givens), `actual_misreads` (cells the reader got wrong), `misreads_in_candidates` (all misread cells among the 15 search candidates), `algorithm` (ucs/greedy/astar), `status` (solved/corrected/unreadable), `exact` (output equals the generator's solution), `n_corrections`, `cost` (total correction cost; empty if unsolved), `search_status` (found/exhausted/node_limit/time_limit), `nodes_expanded`, `nodes_generated`, `nodes_pruned` (children dropped because h = ∞), `goal_tests`, `csp_calls`, `max_frontier`, `seconds` |
+| `exp1_summary.csv` | `level`, `algorithm`, `n_seeds`, mean/std of nodes expanded/generated/pruned, goal tests, CSP calls, seconds, cost, n_corrections (cost and n_corrections over solved puzzles only), exact |
+| `exp2_per_puzzle.csv` | `givens` (25/30/35), `seed`, `puzzle`, `mode` (BT, BT+FC, BT+FC+AC-3, BT+FC+AC-3+MAC), `status` (solved/unsolvable/timeout), `timeout`, `correct`, `assignments`, `backtracks`, `ac3_revisions`, `ac3_pruned`, `fc_pruned`, `values_pruned`, `seconds` |
+| `exp2_summary.csv` | `givens`, `mode`, `n_seeds`, mean/std of assignments, backtracks, AC-3 revisions, values pruned, seconds, timeout rate, correct rate |
+| `exp3_per_puzzle.csv` | `seed`, `level`, `puzzle`, `actual_misreads`, `misreads_in_candidates`, `arm` (nn_guided, no_correction, random, random_in_candidates (ext.), nn_guided_no_T (ext.)), `status`, `exact` |
+| `exp3_summary.csv` | `level`, `arm`, `n_seeds`, `exact_mean`, `exact_std` |
+| `recovery.csv` | per `level`: `puzzles`, `exact_recovered`, `exact_rate`, `rate_mean_over_seeds`, `rate_std_over_seeds`, breakdown `exact_as_read` + `exact_after_correction` + `wrong_solution` + `unreadable` (= puzzles), `wrong_as_read` (part of wrong_solution), `misreads_all_in_candidates` |
+| `*.png`, `FINDINGS.md` | plots of the tables above and a factual summary of the results |
+
+`results/experiments/quick/` and `results/nn/quick/` hold smoke-test outputs and are git-ignored.
