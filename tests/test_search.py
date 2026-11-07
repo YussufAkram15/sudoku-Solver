@@ -57,6 +57,13 @@ def test_step_costs_are_non_negative_and_sorted():
     assert problem.alternatives[X][0].cost == pytest.approx(math.log(0.5 / 0.4))
 
 
+def test_read_digit_must_be_the_argmax():
+    grid, probs = make_reading(**ONE_MISREAD)
+    grid[Z] = 7  # 7 has p = 0.35 at Z, the argmax is the true 1
+    with pytest.raises(ValueError, match="negative"):
+        CorrectionProblem(grid, probs)
+
+
 def test_duplicate_conflicts_found_in_rows_columns_boxes():
     grid, _ = make_reading(**ONE_MISREAD)
     # the misread 2 at (0,2) repeats the 2 at (0,4) in its row and the 2 at (6,2) in its column
@@ -148,6 +155,9 @@ def test_confident_duplicate_cannot_be_fixed_within_budget(algorithm):
     assert r.status == "exhausted" and not r.found and r.solution is None
     if algorithm != "ucs":  # h = infinity prunes every child: nothing beyond the root
         assert r.stats.nodes_expanded == 1
+        assert r.stats.nodes_pruned == r.stats.nodes_generated > 0
+    else:
+        assert r.stats.nodes_pruned == 0
 
 
 # ---------------------------------------------------------------- heuristic properties
@@ -206,6 +216,8 @@ def test_random_baseline_is_seeded_and_uses_same_goal_test():
     b = random_correction(problem, config.make_rng(1), trials=50)
     assert [t.state for t in a.trace] == [t.state for t in b.trace]
     assert a.stats.goal_tests == len(a.trace) <= 51
+    if not a.found:  # 1 root + 50 random sets, each generated set was tested
+        assert a.stats.goal_tests == 51 and a.stats.nodes_generated == 50
     clean_grid, clean_probs = make_reading()
     r = random_correction(CorrectionProblem(clean_grid, clean_probs), config.make_rng(0))
     assert r.found and r.state == frozenset()  # read grid already fine

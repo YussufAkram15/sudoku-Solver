@@ -47,7 +47,8 @@ def random_correction(problem: CorrectionProblem, rng: np.random.Generator,
             result.total_cost = problem.path_cost(state)
             result.solution = problem.solutions[state]
             break
-        states.append(random_state(problem, givens, rng))
+        if step < trials:  # draw the next random set only if it will be tested
+            states.append(random_state(problem, givens, rng))
     result.stats = SearchStats(nodes_expanded=0, nodes_generated=len(states) - 1,
                                goal_tests=problem.goal_stats.goal_tests,
                                csp_calls=problem.goal_stats.csp_calls,

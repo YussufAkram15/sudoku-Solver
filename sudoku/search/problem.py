@@ -57,6 +57,7 @@ class CorrectionProblem:
             raise ValueError(f"unknown goal_mode {goal_mode!r}")
         self.read_grid = np.asarray(read_grid, dtype=np.int64)
         self.probs = np.asarray(probs, dtype=np.float64)
+        self._check_read_is_argmax()
         self.max_corrections = max_corrections
         self.goal_mode = goal_mode
         self.alternatives = self._candidate_alternatives(n_candidates, alts_per_cell)
@@ -70,6 +71,14 @@ class CorrectionProblem:
         self.solutions = {}
 
     # ------------------------------------------------------------ set-up
+    def _check_read_is_argmax(self) -> None:
+        """Step costs are only >= 0 if every read digit is its cell's most probable digit."""
+        for r, c in zip(*np.nonzero(self.read_grid)):
+            p = self.probs[r, c]
+            if p[self.read_grid[r, c] - 1] < p.max():
+                raise ValueError(f"cell {(int(r), int(c))}: read digit {self.read_grid[r, c]} is not "
+                                 "the most probable one, step costs would be negative")
+
     def _candidate_alternatives(self, n_candidates: int, alts_per_cell: int) -> dict:
         """{cell: [Alternative, ...] cheapest first} for the least confident given cells."""
         givens = [(int(r), int(c)) for r, c in zip(*np.nonzero(self.read_grid))]

@@ -12,8 +12,11 @@ is what makes UCS and A* return the cheapest goal.
 Greedy and A* never push a child with h = infinity (a conflict no remaining correction can fix).
 
 Counters:
-- nodes_expanded:  states popped, goal-tested negatively, and whose children were generated;
-- nodes_generated: children created by ``successors`` (including ones pruned by h = infinity);
+- nodes_expanded:  states popped, goal-tested negatively, and whose children were generated
+                   (3-correction leaves count too, they just have no children);
+- nodes_generated: children created by ``successors`` (including pruned ones);
+- nodes_pruned:    generated children never pushed because h = infinity (Greedy / A* only) - this
+                   separates "dead end detected" from "guided by h" when comparing with UCS;
 - goal_tests / csp_calls / csp_timeouts: from the problem (CSP calls = goal tests that reached it);
 - max_frontier:    largest heap size seen;
 - seconds:         wall-clock time.
@@ -43,6 +46,7 @@ class SearchStats:
 
     nodes_expanded: int = 0
     nodes_generated: int = 0
+    nodes_pruned: int = 0
     goal_tests: int = 0
     csp_calls: int = 0
     csp_timeouts: int = 0
@@ -94,10 +98,18 @@ def search(problem: CorrectionProblem, algorithm: str = config.DEFAULT_ALGORITHM
            node_limit: int = config.SEARCH_NODE_LIMIT,
            time_limit: float = config.SEARCH_TIME_LIMIT) -> SearchResult:
     """Run UCS / Greedy / A* on ``problem``; the first goal state popped wins."""
-    priority(algorithm, 0.0, 0.0)  # validates the name
+    if algorithm not in ALGORITHMS:
+        raise ValueError(f"unknown algorithm {algorithm!r}; use one of {ALGORITHMS}")
     problem.reset_counters()
-    use_h = algorithm != "ucs"
-    heuristic = (lambda s: conflict_heuristic(problem, s)) if use_h else (lambda s: 0.0)
+    h_cache = {}  # the same state is often generated several times; compute h once
+
+    def heuristic(state):
+        if algorithm == "ucs":
+            return 0.0
+        if state not in h_cache:
+            h_cache[state] = conflict_heuristic(problem, state)
+        return h_cache[state]
+
     stats, trace = SearchStats(), []
     start = time.perf_counter()
     order = itertools.count()  # FIFO tie-break -> deterministic
@@ -130,6 +142,7 @@ def search(problem: CorrectionProblem, algorithm: str = config.DEFAULT_ALGORITHM
                 continue
             h_child = heuristic(child)
             if math.isinf(h_child):
+                stats.nodes_pruned += 1
                 continue  # this conflict can never be fixed below the child
             heapq.heappush(frontier, (priority(algorithm, g + cost, h_child), next(order),
                                       child, g + cost, h_child))
