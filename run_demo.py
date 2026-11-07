@@ -69,11 +69,17 @@ def grid_text(grid, conf=None, marks=()) -> str:
     return "\n".join(lines)
 
 
+PRIORITY_NAME = {"ucs": "g", "greedy": "h", "astar": "f = g + h"}
+
+
 def print_trace(search_result, rows: int = config.DEMO_TRACE_ROWS) -> None:
-    """Popped nodes in order with g, h and f = g + h."""
-    print(f"  {'step':>4}  {'g':>7}  {'h':>7}  {'f':>7}  goal  state")
+    """Popped nodes in order with g and h (and f = g + h for A*)."""
+    astar = search_result.algorithm == "astar"
+    print(f"  frontier ordered by {PRIORITY_NAME[search_result.algorithm]}")
+    print(f"  {'step':>4}  {'g':>7}  {'h':>7}  {'f' if astar else '':>7}  goal  state")
     for t in search_result.trace[:rows]:
-        print(f"  {t.step:4d}  {t.g:7.3f}  {t.h:7.3f}  {t.g + t.h:7.3f}  {'YES' if t.is_goal else ' no'}"
+        f = f"{t.g + t.h:7.3f}" if astar else " " * 7
+        print(f"  {t.step:4d}  {t.g:7.3f}  {t.h:7.3f}  {f}  {'YES' if t.is_goal else ' no'}"
               f"   {describe(t.state)}")
     if len(search_result.trace) > rows:
         print(f"  ... {len(search_result.trace) - rows} more popped nodes")
@@ -130,7 +136,10 @@ def figure_pipeline(mosaic, result, puzzle, injected, path) -> None:
         draw_grid(axes[2], result.solution, f"3. Solution ({result.status}, {ok})\n"
                   "orange = corrected by search", marks=fixed)
     else:
-        draw_grid(axes[2], read.grid, f"3. {result.message}")
+        unsure = {u.cell: "tab:orange" for u in result.least_confident}
+        second = {u.cell: f"or {u.top3[1][0]}? {u.top3[1][1]:.0%}" for u in result.least_confident}
+        draw_grid(axes[2], read.grid, f"3. {result.message}\norange = {len(unsure)} least confident "
+                  "cells with 2nd choice (top-3 in console)", marks=unsure, small=second)
     save(fig, path)
 
 
@@ -141,10 +150,12 @@ def figure_search(results: dict, chosen: str, path) -> None:
     steps = [t.step for t in trace]
     axes[0].plot(steps, [t.g for t in trace], "o-", ms=3, label="g (cost so far)")
     axes[0].plot(steps, [t.h for t in trace], "s-", ms=3, label="h (conflict lower bound)")
-    axes[0].plot(steps, [t.g + t.h for t in trace], "--", label="f = g + h")
+    if chosen == "astar":
+        axes[0].plot(steps, [t.g + t.h for t in trace], "--", label="f = g + h (A* priority)")
     axes[0].set_xlabel("pop order")
     axes[0].set_ylabel("cost")
-    axes[0].set_title(f"{chosen.upper()} search trace ({len(trace)} nodes popped)", fontsize=10)
+    axes[0].set_title(f"{chosen.upper()} search trace ({len(trace)} nodes popped, "
+                      f"ordered by {PRIORITY_NAME[chosen]})", fontsize=10)
     axes[0].legend(fontsize=8)
     names = list(results)
     expanded = [results[a].search.stats.nodes_expanded if results[a].search else 0 for a in names]
@@ -185,8 +196,8 @@ def figure_nn_on_off(rates: dict, path) -> None:
     ax.set_xlabel("injected misreads")
     ax.set_ylabel("exact recovery rate")
     ax.set_ylim(0, 1.05)
-    ax.set_title(f"System with NN correction on vs off ({config.DEMO_BATCH_PUZZLES} puzzles/level)",
-                 fontsize=10)
+    ax.set_title(f"System with NN correction on vs off ({config.DEMO_BATCH_PUZZLES} puzzles/level, "
+                 "illustration;\nfull study: Experiment 3)", fontsize=10)
     ax.legend(fontsize=8)
     save(fig, path)
 
@@ -197,7 +208,8 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=config.SEED)
     parser.add_argument("--misreads", type=int, default=config.DEMO_MISREADS,
                         choices=config.MISREAD_LEVELS)
-    parser.add_argument("--givens", type=int, default=config.DEFAULT_GIVENS)
+    parser.add_argument("--givens", type=int, default=config.DEFAULT_GIVENS,
+                        choices=config.GIVEN_TARGETS)
     parser.add_argument("--algorithm", default=config.DEFAULT_ALGORITHM, choices=ALGORITHMS)
     args = parser.parse_args()
     out = config.DEMO_DIR
@@ -247,7 +259,8 @@ def main() -> None:
         corrected[row.cell] = row.new_digit
     csp_grid = corrected if result.solved else puzzle.puzzle
     csp = compare_csp_modes(csp_grid)
-    print(f"\n=== 5. CSP pruning on the {'solved' if result.solved else 'original'} puzzle (static order)")
+    which = "corrected puzzle" if result.solved else "original (ground-truth) puzzle"
+    print(f"\n=== 5. CSP pruning on the {which} (static order)")
     print(f"  {'mode':12s} {'status':9s} {'assign':>8s} {'backtr':>8s} {'AC3 rev':>8s} {'pruned':>8s}")
     for name, r in csp.items():
         st = r.stats

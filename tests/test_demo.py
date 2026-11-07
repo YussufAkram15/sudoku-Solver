@@ -5,6 +5,7 @@ import sys
 import pytest
 
 from sudoku import config
+from sudoku.integration import UNREADABLE_MESSAGE
 from tests.test_nn import needs_model
 
 import run_demo
@@ -21,6 +22,11 @@ def test_demo_runs_and_saves_figures(tmp_path, monkeypatch, capsys, misreads):
     for section in ("=== 1. NN reading", "=== 2. AC-3 check", "=== 3. Correction search",
                     "=== 4. Result", "=== 5. CSP pruning", "=== 6. NN-guided correction"):
         assert section in out
+    if misreads == 2:
+        assert "exact recovery of the original solution: True" in out
+        assert "correction (" in out
+    else:  # 4 misreads exceed the 3-correction budget
+        assert UNREADABLE_MESSAGE in out and "least confident cells" in out
     names = {p.name for p in tmp_path.iterdir()}
     assert names == {"demo_pipeline.png", "demo_search.png", "demo_csp.png", "demo_nn_on_off.png"}
 
