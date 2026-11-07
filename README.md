@@ -39,7 +39,8 @@ replace PyPI and break the other installs.
 Run these from the repository root with the venv active. Times are from a 12-core laptop CPU.
 
 ```bash
-python make_data.py        # download MNIST, split, generate the puzzle bank         (~10 s + download)
+python make_data.py        # download MNIST, split, generate the puzzle bank  (~10 s + download, which
+                           #   took 1-19 min depending on the mirror)
 python train.py            # CNN + logistic regression, calibration, digit pools    (~1 min)
 pytest                     # 98 tests                                                (~20 s)
 python run_demo.py         # integrated demo: --seed 7 --misreads 2 by default       (~5 s)
