@@ -86,8 +86,11 @@ POOLS_QUICK_FILE = DATA_PROCESSED / "digit_pools_quick.npz"
 NN_RESULTS = RESULTS / "nn"                            # metrics CSV, confusion + reliability PNGs
 
 # ---------------------------------------------------------------- CSP
-ORDERING = "static"     # "static" (row-major) or "mrv"; identical in every BT/FC/AC-3 mode
-USE_MAC = False         # extension: maintain arc consistency during search
+# "static" (row-major) or "mrv"; identical in every BT/FC/AC-3 mode. Experiment 2 uses "static":
+# MRV computed from the assignment already picks dead cells first (one-step lookahead), so with
+# MRV BT, BT+FC and BT+FC+AC-3 make exactly the same assignments and the comparison shows nothing.
+ORDERING = "static"
+USE_MAC = False         # extension: maintain arc consistency during search (needs AC-3 on)
 CSP_NODE_LIMIT = 200_000    # max assignments before status "timeout"
 CSP_TIME_LIMIT = 10.0       # seconds before status "timeout"
 

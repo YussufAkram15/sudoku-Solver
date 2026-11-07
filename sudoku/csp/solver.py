@@ -10,7 +10,8 @@ Parts:
   peers; if a domain becomes empty, undo at once. Givens are forward-checked before search.
 - AC-3 (use_ac3): run once on the initial domains before search; an empty domain means the puzzle
   is contradictory (e.g. two equal givens in a unit) and search never starts.
-- MAC (use_mac, extension): after each assignment, run AC-3 starting from the arcs into v.
+- MAC (use_mac, extension, needs use_ac3): after each assignment, run AC-3 again starting from
+  the arcs into v and into every cell FC just pruned.
 
 Variable ordering is the SAME function in every mode (``config.ORDERING``):
 - "static": first unassigned cell in row-major order;
@@ -20,7 +21,9 @@ Variable ordering is the SAME function in every mode (``config.ORDERING``):
 
 Counters (``Stats``):
 - assignments:   values given to a variable during search (givens are not counted);
-- backtracks:    assignments undone because they failed (dead end below, or FC/MAC wipe-out);
+- backtracks:    assignments undone because they failed (no solution below them, or FC/MAC
+                 wipe-out); when counting several solutions, undoing an assignment that led to
+                 a solution is not a backtrack;
 - ac3_revisions: revise(xi, xj) calls, in preprocessing and in MAC;
 - ac3_pruned / fc_pruned: domain values removed by AC-3 (incl. MAC) / by forward checking;
 - seconds:       wall-clock time.
@@ -91,6 +94,8 @@ class _Search:
     def __init__(self, grid, use_fc, use_ac3, use_mac, ordering, node_limit, time_limit,
                  solution_limit):
         self.grid = np.asarray(grid)
+        if use_mac and not use_ac3:
+            raise ValueError("use_mac needs use_ac3: MAC maintains the arc consistency AC-3 sets up")
         self.use_fc, self.use_ac3, self.use_mac = use_fc, use_ac3, use_mac
         if ordering not in ("static", "mrv"):
             raise ValueError(f"unknown ordering {ordering!r}")
@@ -191,13 +196,15 @@ class _Search:
             if ok and self.use_mac:
                 ok, _ = ac3(self.domains, self.stats, queue=self.mac_queue(v, removed),
                             removed=removed)
+            found_before = len(self.solutions)
             if ok and self.search():
                 return True
             for u, val in removed:  # undo FC / MAC pruning
                 self.domains[u].add(val)
             self.domains[v] = saved_domain
             self.value[v] = 0
-            self.stats.backtracks += 1
+            if len(self.solutions) == found_before:  # nothing found below: a real failure
+                self.stats.backtracks += 1
         return False
 
 

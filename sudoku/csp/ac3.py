@@ -32,10 +32,15 @@ def ac3(domains: list, stats, queue=None, removed: list | None = None):
 
     Returns ``(True, None)`` if consistent, or ``(False, v)`` where v is the variable whose domain
     became empty (a contradiction, e.g. two equal givens in one unit).
+
+    The queue holds each arc at most once (``waiting`` mirrors its contents), as in the textbook
+    AC-3, so ``ac3_revisions`` counts distinct pending revisions, not duplicates.
     """
-    queue = deque(ARCS if queue is None else queue)
+    queue = deque(dict.fromkeys(ARCS if queue is None else queue))  # drop duplicates, keep order
+    waiting = set(queue)
     while queue:
         xi, xj = queue.popleft()
+        waiting.discard((xi, xj))
         stats.ac3_revisions += 1
         value = revise(domains, xi, xj)
         if value is None:
@@ -46,5 +51,8 @@ def ac3(domains: list, stats, queue=None, removed: list | None = None):
         if not domains[xi]:
             return False, xi
         # D(xi) shrank: arcs (xk, xi) pointing into xi must be checked again.
-        queue.extend((xk, xi) for xk in PEERS[xi] if xk != xj)
+        for xk in PEERS[xi]:
+            if xk != xj and (xk, xi) not in waiting:
+                queue.append((xk, xi))
+                waiting.add((xk, xi))
     return True, None

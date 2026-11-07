@@ -9,6 +9,7 @@ from sudoku.csp.ac3 import ac3, revise
 from sudoku.csp.solver import Stats
 from sudoku.csp.sudoku_csp import ARCS, PEERS, initial_domains, var
 from sudoku.data import generator
+from tests.test_data import _unavoidable_rectangle
 
 N = config.GRID
 
@@ -104,6 +105,36 @@ def test_revise_removes_only_unsupported_value():
     domains = [{1, 2, 3}, {2}, {2, 3}]
     assert revise(domains, 0, 1) == 2 and domains[0] == {1, 3}   # 2 has no support in {2}
     assert revise(domains, 0, 2) is None and domains[0] == {1, 3}  # {2, 3} supports everything
+
+
+def test_mac_requires_ac3():
+    with pytest.raises(ValueError, match="use_mac needs use_ac3"):
+        solve(KNOWN, use_fc=True, use_ac3=False, use_mac=True)
+
+
+def test_ac3_queue_has_no_duplicate_arcs():
+    # From scratch every arc is revised once; a re-queued arc is never queued twice at a time,
+    # so revisions stay far below the old duplicate-allowing count.
+    stats = Stats()
+    ok, _ = ac3(initial_domains(KNOWN), stats)
+    assert ok and len(ARCS) <= stats.ac3_revisions < 3 * len(ARCS)
+
+
+def test_counting_does_not_call_found_solutions_backtracks():
+    # Exactly two solutions: blank an "unavoidable rectangle" (a b / b a in two boxes). Static BT
+    # tries a then b in the first cell; both branches end in a solution, so the 8 assignments are
+    # all on solution paths and none of the undos is a failure.
+    for seed in range(50):
+        solution = generator.generate_full_grid(config.make_rng(seed))
+        found = _unavoidable_rectangle(solution)
+        if found:
+            break
+    r1, r2, c1, c2 = found
+    grid = solution.copy()
+    grid[[r1, r1, r2, r2], [c1, c2, c1, c2]] = 0
+    r = count_solutions(grid, limit=10, use_fc=False, use_ac3=False, ordering="static")
+    assert r.count == 2
+    assert r.stats.assignments == 8 and r.stats.backtracks == 0
 
 
 @pytest.mark.normal
