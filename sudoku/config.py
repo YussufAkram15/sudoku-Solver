@@ -27,7 +27,14 @@ RESULTS = ROOT / "results"                    # CSV tables + PNG plots (committe
 # Rule used: seeded 50k/10k split of all 60k first, then drop digit 0 inside each part
 # (about 45k train / 9k validation remain). MNIST test stays untouched.
 MNIST_TRAIN_SIZE = 60_000
+MNIST_TEST_SIZE = 10_000
 MNIST_TRAIN_NONZERO = 54_077   # digits 1-9 in MNIST train; asserted when the data is loaded
+MNIST_TEST_NONZERO = 9_020     # digits 1-9 in MNIST test (980 zeros dropped); asserted on load
+PIXEL_MAX = 255.0              # raw MNIST pixels are uint8 0..255; scaled to 0..1 on load
+SPLITS_FILE = DATA_PROCESSED / "mnist_digits.npz"      # written by make_data.py
+PUZZLES_FILE = DATA_PROCESSED / "puzzles.npz"          # full puzzle bank
+PUZZLES_QUICK_FILE = DATA_PROCESSED / "puzzles_quick.npz"  # small bank from make_data.py --quick
+DATA_PREVIEW_DIR = RESULTS / "data"                    # sample mosaic PNG from make_data.py
 SPLIT_TRAIN = 50_000           # train part of the full MNIST train set, before dropping 0
 SPLIT_VAL = 10_000             # validation part, before dropping 0
 DIGITS = tuple(range(1, 10))   # digit 0 is dropped; class index = digit - 1
@@ -39,12 +46,18 @@ BOX = 3                 # sub-box side length
 GIVEN_TARGETS = (25, 30, 35)          # number of givens in generated puzzles
 DEFAULT_GIVENS = 30                   # used by the demo and the search/correction experiments
 GENERATOR_MAX_ATTEMPTS = 20           # new full grids to try if a given-count target is not reached
+MIN_GIVENS = 17                       # fewest givens any uniquely solvable Sudoku can have
 BLANK_THRESHOLD = 0.01                # tile mean pixel (0..1) below this = empty cell
 
 # ---------------------------------------------------------------- hard-digit injection
 MISREAD_LEVELS = (0, 1, 2, 3, 4)
 HARD_PROB_THRESHOLD = 0.6   # pool rule from the brief: wrong read, or top-1 prob below this
 HARD_TOPK = 3               # ...and the true digit must be within the model's top-k
+# True: "k misreads" means exactly k cells the model reads WRONG. The k injected tiles come from the
+# wrong-read part of the hard pool and every other given uses a test image the model reads correctly.
+# False: inject from the whole hard pool (brief's literal rule); some injected tiles may still be read
+# correctly, so the actual number of misreads can be below k.
+EXACT_MISREADS = True
 
 # ---------------------------------------------------------------- neural network
 CNN_EPOCHS = 3
@@ -82,6 +95,8 @@ N_SEEDS = 5
 PUZZLES_PER_SEED = 20    # 5 seeds x 20 = 100 puzzles per misread level
 QUICK_SEEDS = 2
 QUICK_PUZZLES = 3
+PUZZLE_BANK_SIZE = N_SEEDS * PUZZLES_PER_SEED      # puzzles per given count in puzzles.npz
+QUICK_BANK_SIZE = QUICK_SEEDS * QUICK_PUZZLES      # puzzles per given count in puzzles_quick.npz
 
 
 def set_seed(seed: int = SEED) -> None:

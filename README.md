@@ -25,7 +25,7 @@ replace PyPI and break the other installs.
 ## Run order
 
 ```bash
-python make_data.py        # download MNIST, split, generate puzzles (seeded)
+python make_data.py        # download MNIST, split, generate puzzles (seeded; --quick = small bank)
 python train.py            # train CNN + logistic-regression baseline, calibrate, build digit pools
 pytest                     # run the test suite
 python run_demo.py         # integrated demo (e.g. --seed 7 --misreads 2)
