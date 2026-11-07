@@ -22,8 +22,14 @@ MODELS = ROOT / "models"                      # trained CNN / baseline weights
 RESULTS = ROOT / "results"                    # CSV tables + PNG plots (committed)
 
 # ---------------------------------------------------------------- data
-N_TRAIN = 50_000        # images kept for training, taken from MNIST train (digits 1-9)
-N_VAL = 10_000          # validation images, also from MNIST train; MNIST test stays untouched
+# The brief's 50,000 / 10,000 split refers to the full 60,000-image MNIST train set. Only 54,077 of
+# those are digits 1-9 (5,923 are zeros), so 50k + 10k cannot both be filled AFTER dropping 0.
+# Rule used: seeded 50k/10k split of all 60k first, then drop digit 0 inside each part
+# (about 45k train / 9k validation remain). MNIST test stays untouched.
+MNIST_TRAIN_SIZE = 60_000
+MNIST_TRAIN_NONZERO = 54_077   # digits 1-9 in MNIST train; asserted when the data is loaded
+SPLIT_TRAIN = 50_000           # train part of the full MNIST train set, before dropping 0
+SPLIT_VAL = 10_000             # validation part, before dropping 0
 DIGITS = tuple(range(1, 10))   # digit 0 is dropped; class index = digit - 1
 N_CLASSES = 9
 TILE = 28               # MNIST image side in pixels
@@ -61,8 +67,11 @@ CSP_TIME_LIMIT = 10.0       # seconds before status "timeout"
 CANDIDATE_CELLS = 15     # least-confident given cells that may be corrected
 ALTS_PER_CELL = 3        # top-k non-current digits tried per candidate cell
 MAX_CORRECTIONS = 3      # max cells changed in one correction set
-SEARCH_NODE_LIMIT = 5_000    # max nodes expanded before giving up ("unreadable")
-SEARCH_TIME_LIMIT = 60.0     # seconds before giving up
+# Full correction space with 15 cells x 3 alternatives and <= 3 corrections is
+# 1 + 45 + 945 + 12,285 = 13,276 states. The node cap sits above that, so "unreadable" normally
+# means the 3-correction budget is exhausted; hitting a cap is reported as its own stop reason.
+SEARCH_NODE_LIMIT = 15_000   # max nodes expanded before stopping with reason "node_limit"
+SEARCH_TIME_LIMIT = 60.0     # seconds before stopping with reason "time_limit" (revisit in Phase 8)
 GOAL_MODE = "unique"     # "unique" = exactly one solution, "solvable" = at least one
 DEFAULT_ALGORITHM = "astar"   # "ucs", "greedy" or "astar"
 RANDOM_TRIALS = 200      # random-correction baseline: correction sets tried

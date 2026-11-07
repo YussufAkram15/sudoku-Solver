@@ -1,9 +1,12 @@
 .venv/
 __pycache__/
 *.pyc
-data/raw/
-models/*.pt
 .pytest_cache/
+
+# Regenerable data: MNIST download, splits, puzzle banks, digit pools
+data/raw/
 data/processed/
-models/*.joblib
-results/demo/
+
+# Trained weights (any format); train.py regenerates them
+models/*
+!models/.gitkeep
