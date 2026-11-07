@@ -104,6 +104,14 @@ MAX_CORRECTIONS = 3      # max cells changed in one correction set
 SEARCH_NODE_LIMIT = 15_000   # max nodes expanded before stopping with reason "node_limit"
 SEARCH_TIME_LIMIT = 60.0     # seconds before stopping with reason "time_limit" (revisit in Phase 8)
 GOAL_MODE = "unique"     # "unique" = exactly one solution, "solvable" = at least one
+# CSP settings for the goal test (it can run thousands of times per puzzle, so it uses the fastest
+# solver setup; Experiment 2 compares BT / FC / AC-3 separately with ORDERING above).
+GOAL_ORDERING = "mrv"
+GOAL_USE_FC = True
+GOAL_USE_AC3 = True
+GOAL_USE_MAC = True
+GOAL_NODE_LIMIT = 20_000     # assignments per goal test; hitting it = "not a goal" (counted)
+GOAL_TIME_LIMIT = 2.0        # seconds per goal test
 DEFAULT_ALGORITHM = "astar"   # "ucs", "greedy" or "astar"
 RANDOM_TRIALS = 200      # random-correction baseline: correction sets tried
 N_UNREADABLE_REPORT = 5  # least-confident cells listed when no correction works
