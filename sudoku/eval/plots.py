@@ -68,3 +68,29 @@ def plot_bars(ax, labels, values, title: str, ylabel: str, log: bool = False, er
                 ha="center", va="bottom", fontsize=7)
     ax.set_title(title, fontsize=10)
     ax.set_ylabel(ylabel)
+
+
+def grouped_bars(ax, groups, series: dict, title: str, ylabel: str, log: bool = False,
+                 colors: dict | None = None, label_values: bool = False) -> None:
+    """Bars for several series side by side per group, with std error bars.
+
+    series: {name: (means, stds)} with one value per group.
+    log:    log y axis; the lower error bar is clipped so it never reaches 0 or below, and bars
+            with mean 0 are simply not drawn (log scale cannot show 0).
+    """
+    x = np.arange(len(groups))
+    width = 0.8 / len(series)
+    for j, (name, (means, stds)) in enumerate(series.items()):
+        pos = x - 0.4 + width * (j + 0.5)
+        means, stds = np.asarray(means, float), np.asarray(stds, float)
+        yerr = np.vstack([np.minimum(stds, means * 0.9), stds]) if log else stds
+        ax.bar(pos, means, width, yerr=yerr, capsize=2, label=name,
+               color=(colors or {}).get(name))
+        if label_values:
+            for p, m in zip(pos, means):
+                ax.text(p, m, f"{m:.2f}", ha="center", va="bottom", fontsize=6)
+    ax.set_xticks(x, labels=[str(g) for g in groups])
+    if log:
+        ax.set_yscale("log", nonpositive="clip")
+    ax.set_title(title, fontsize=10)
+    ax.set_ylabel(ylabel)

@@ -128,6 +128,8 @@ PUZZLES_PER_SEED = 20    # 5 seeds x 20 = 100 puzzles per misread level
 QUICK_SEEDS = 2
 QUICK_PUZZLES = 3
 PUZZLE_BANK_SIZE = N_SEEDS * PUZZLES_PER_SEED      # puzzles per given count in puzzles.npz
+EXPERIMENTS_DIR = RESULTS / "experiments"          # --quick writes to EXPERIMENTS_DIR / "quick"
+RANDOM_ARM_SEED_OFFSET = 1_000                     # random-correction rng = (SEED, s, k, i, offset)
 QUICK_BANK_SIZE = QUICK_SEEDS * QUICK_PUZZLES      # puzzles per given count in puzzles_quick.npz
 
 

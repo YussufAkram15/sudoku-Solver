@@ -1,0 +1,21 @@
+level,arm,n_seeds,exact_mean,exact_std
+0,nn_guided,5,1.0,0.0
+0,nn_guided_no_T (ext.),5,1.0,0.0
+0,no_correction,5,1.0,0.0
+0,random,5,1.0,0.0
+1,nn_guided,5,0.95,0.04999999999999999
+1,nn_guided_no_T (ext.),5,0.95,0.04999999999999999
+1,no_correction,5,0.0,0.0
+1,random,5,0.27999999999999997,0.12041594578792297
+2,nn_guided,5,0.89,0.07416198487095661
+2,nn_guided_no_T (ext.),5,0.89,0.07416198487095661
+2,no_correction,5,0.0,0.0
+2,random,5,0.0,0.0
+3,nn_guided,5,0.8700000000000001,0.07582875444051547
+3,nn_guided_no_T (ext.),5,0.8700000000000001,0.07582875444051547
+3,no_correction,5,0.0,0.0
+3,random,5,0.0,0.0
+4,nn_guided,5,0.0,0.0
+4,nn_guided_no_T (ext.),5,0.0,0.0
+4,no_correction,5,0.0,0.0
+4,random,5,0.0,0.0
