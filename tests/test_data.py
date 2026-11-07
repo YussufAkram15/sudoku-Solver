@@ -40,6 +40,21 @@ def test_split_is_seeded_disjoint_and_drops_zeros():
 
 
 @pytest.mark.normal
+def test_download_retries_then_gives_clear_message(monkeypatch, tmp_path):
+    import torchvision.datasets
+
+    calls = []
+
+    def failing_mnist(*args, **kwargs):
+        calls.append(1)
+        raise RuntimeError("Error downloading train-images-idx3-ubyte.gz:\nmirror down")
+
+    monkeypatch.setattr(torchvision.datasets, "MNIST", failing_mnist)
+    with pytest.raises(SystemExit, match="MNIST download failed"):
+        mnist.download_mnist(tmp_path, attempts=2)
+    assert len(calls) == 2
+
+
 # ---------------------------------------------------------------- generator
 @pytest.mark.parametrize("n_givens", config.GIVEN_TARGETS)
 def test_generated_puzzle_has_unique_solution_and_target_givens(n_givens):

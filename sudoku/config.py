@@ -31,6 +31,7 @@ MNIST_TEST_SIZE = 10_000
 MNIST_TRAIN_NONZERO = 54_077   # digits 1-9 in MNIST train; asserted when the data is loaded
 MNIST_TEST_NONZERO = 9_020     # digits 1-9 in MNIST test (980 zeros dropped); asserted on load
 PIXEL_MAX = 255.0              # raw MNIST pixels are uint8 0..255; scaled to 0..1 on load
+MNIST_DOWNLOAD_ATTEMPTS = 3    # the mirrors sometimes cut a transfer short; retry before giving up
 SPLITS_FILE = DATA_PROCESSED / "mnist_digits.npz"      # written by make_data.py
 PUZZLES_FILE = DATA_PROCESSED / "puzzles.npz"          # full puzzle bank
 PUZZLES_QUICK_FILE = DATA_PROCESSED / "puzzles_quick.npz"  # small bank from make_data.py --quick

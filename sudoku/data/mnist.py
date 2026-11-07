@@ -49,15 +49,27 @@ class DigitSplit:
         return len(self.digits)
 
 
-def download_mnist(root: Path = config.DATA_RAW):
+def download_mnist(root: Path = config.DATA_RAW, attempts: int = config.MNIST_DOWNLOAD_ATTEMPTS):
     """Download MNIST with torchvision (if not cached) and return raw uint8 arrays.
 
     Returns (train_images, train_labels, test_images, test_labels); labels still include 0.
+    torchvision checks every file's MD5; a transfer cut short fails that check, so the download is
+    retried up to ``attempts`` times (files already complete are not downloaded again).
     """
     from torchvision.datasets import MNIST  # imported here so CSP/search code never needs torch
 
-    train = MNIST(str(root), train=True, download=True)
-    test = MNIST(str(root), train=False, download=True)
+    for attempt in range(1, attempts + 1):
+        try:
+            train = MNIST(str(root), train=True, download=True)
+            test = MNIST(str(root), train=False, download=True)
+            break
+        except RuntimeError as error:
+            print(f"  MNIST download attempt {attempt}/{attempts} failed: {str(error).splitlines()[0]}")
+            if attempt == attempts:
+                raise SystemExit(
+                    "MNIST download failed. Check the internet connection and run "
+                    "`python make_data.py` again, or copy an existing data/raw/MNIST folder here."
+                ) from error
     return train.data.numpy(), train.targets.numpy(), test.data.numpy(), test.targets.numpy()
 
 
