@@ -18,11 +18,12 @@ The pools themselves are computed after training (``train.py``).
 """
 
 from dataclasses import dataclass
+from pathlib import Path
 
 import numpy as np
 
 from sudoku import config
-from sudoku.data.mosaic import BLANK, index_pools_by_digit
+from sudoku.data.mosaic import BLANK, assign_tiles, index_pools_by_digit, render_mosaic
 from sudoku.data.mnist import digit_to_class
 
 
@@ -105,3 +106,31 @@ def inject_hard_digits(
         new_index[r, c] = rng.choice(inject_pools[int(puzzle[r, c])])
     assert (new_index == BLANK).sum() == (tile_index == BLANK).sum()
     return new_index, cells
+
+
+def make_level_mosaic(puzzle, k: int, pools: DigitPools, test_images, rng: np.random.Generator):
+    """Mosaic for misread level k: base images for all givens, then k injected hard images.
+
+    Returns ``(mosaic, tile_index, injected_cells)``.
+    """
+    tile_index = assign_tiles(puzzle, pools.base, rng)
+    tile_index, cells = inject_hard_digits(puzzle, tile_index, k, pools.inject, rng)
+    return render_mosaic(tile_index, test_images), tile_index, cells
+
+
+def save_pool_probs(path: Path, probs, digits, temperature: float) -> None:
+    """Save the reader's MNIST-test probabilities (and the masks they give) for later pool building."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    np.savez_compressed(
+        path, probs=np.asarray(probs, np.float64), digits=np.asarray(digits),
+        temperature=np.float64(temperature), hard=hard_mask(probs, digits),
+        misread=misread_mask(probs, digits), clean=clean_mask(probs, digits),
+    )
+
+
+def load_pools(path: Path = config.POOLS_FILE, exact_misreads: bool = config.EXACT_MISREADS):
+    """Rebuild ``DigitPools`` from the saved probabilities (the rules live in this module)."""
+    if not path.exists():
+        raise FileNotFoundError(f"{path} missing - run `python train.py` first")
+    with np.load(path) as data:
+        return build_pools(data["probs"], data["digits"], exact_misreads)

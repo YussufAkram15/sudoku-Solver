@@ -10,3 +10,6 @@ data/processed/
 # Trained weights (any format); train.py regenerates them
 models/*
 !models/.gitkeep
+
+# Smoke-test outputs of train.py --quick
+results/nn/quick/

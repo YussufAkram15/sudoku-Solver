@@ -66,10 +66,24 @@ CNN_BATCH_SIZE = 128
 CNN_LR = 1e-3
 CNN_CONV_CHANNELS = (16, 32)
 CNN_HIDDEN = 128
-LOGREG_MAX_ITER = 200
+CNN_KERNEL = 3                 # conv kernel size (padding keeps 28x28 before each 2x2 max-pool)
+CNN_EVAL_BATCH = 1024          # batch size when only predicting (no gradients)
+LOGREG_MAX_ITER = 1000         # lbfgs converges in ~205 iterations on the 20k subset
 LOGREG_TRAIN_SUBSET = 20_000   # logistic regression on raw pixels is slow; subset of the train split
 ECE_BINS = 15
 USE_TEMPERATURE = True         # reader applies temperature scaling fitted on validation
+TEMPERATURE_BOUNDS = (0.05, 20.0)  # search range for the fitted temperature T
+PROB_EPS = 1e-12               # floor before taking log of a probability (avoids log 0)
+# train.py --quick: tiny run for smoke tests, saved under models/quick and results/nn/quick
+QUICK_EPOCHS = 1
+QUICK_TRAIN_SUBSET = 5_000
+QUICK_LOGREG_SUBSET = 2_000
+CNN_FILE = "cnn.pt"            # file names inside the model directory
+CNN_META_FILE = "cnn_meta.json"
+LOGREG_FILE = "logreg.joblib"
+POOLS_FILE = DATA_PROCESSED / "digit_pools.npz"        # reader probs on MNIST test + pool masks
+POOLS_QUICK_FILE = DATA_PROCESSED / "digit_pools_quick.npz"
+NN_RESULTS = RESULTS / "nn"                            # metrics CSV, confusion + reliability PNGs
 
 # ---------------------------------------------------------------- CSP
 ORDERING = "static"     # "static" (row-major) or "mrv"; identical in every BT/FC/AC-3 mode

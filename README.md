@@ -27,6 +27,7 @@ replace PyPI and break the other installs.
 ```bash
 python make_data.py        # download MNIST, split, generate puzzles (seeded; --quick = small bank)
 python train.py            # train CNN + logistic-regression baseline, calibrate, build digit pools
+                           #   (~1 min on CPU; --quick = smoke run into models/quick)
 pytest                     # run the test suite
 python run_demo.py         # integrated demo (e.g. --seed 7 --misreads 2)
 python run_experiments.py  # all experiments (add --quick for a short smoke run)

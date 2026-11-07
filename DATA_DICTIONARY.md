@@ -108,3 +108,26 @@ With `EXACT_MISREADS = True` (default) the base pool is the clean pool and the i
 misread pool, so a level-k puzzle has **exactly k** cells read wrong by the reader. With
 `EXACT_MISREADS = False` the base pool is all test images and the injection pool is the whole hard
 pool (the brief's literal rule); the actual misread count can then differ from k.
+
+### Saved pools — `data/processed/digit_pools.npz` (GENERATED from REAL test images, git-ignored)
+
+Written by `train.py` step 6 (`--quick` writes `digit_pools_quick.npz` from the smoke-test model).
+`injection.load_pools()` rebuilds the base/injection pools from `probs` with the rules above.
+
+| Array | Shape / dtype | Meaning |
+|---|---|---|
+| `probs` | (9020, 9) float64 | reader probabilities (CNN + temperature T) on each MNIST-test row, column i = digit i+1 |
+| `digits` | (9020,) int64 | true digit of each MNIST-test row (REAL) |
+| `temperature` | scalar float64 | T used for `probs` (same T the pipeline's reader uses) |
+| `hard`, `misread`, `clean` | (9020,) bool | membership of each test row in the three pools |
+
+Pool sizes with the default seed 7 (also in `results/nn/pool_sizes.csv`; CNN test accuracy 98.49%):
+
+| Digit | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | all |
+|---|---|---|---|---|---|---|---|---|---|---|
+| hard | 11 | 18 | 27 | 21 | 19 | 14 | 39 | 13 | 14 | 176 |
+| misread | 8 | 12 | 18 | 14 | 15 | 13 | 32 | 12 | 9 | 133 |
+| clean | 1127 | 1020 | 990 | 968 | 877 | 945 | 995 | 962 | 1000 | 8884 |
+
+The misread pool is small (8–32 images per digit), so across 100 puzzles the same hard image is
+reused many times. Every digit has at least one, so every given cell is eligible for injection.
