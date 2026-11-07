@@ -202,7 +202,8 @@ def _two_equal_givens():
 def test_ac3_reports_contradictory_givens_before_search():
     r = solve(_two_equal_givens(), use_fc=True, use_ac3=True)
     assert r.status == "unsolvable" and r.solution is None
-    assert "AC-3" in r.reason and r.stats.assignments == 0
+    assert r.reason.startswith("No solution") and "AC-3" in r.reason
+    assert r.stats.assignments == 0
     assert r.conflict_cell in [(0, 0), (0, 4)]
 
 
@@ -223,5 +224,5 @@ def test_unsolvable_without_duplicate_givens():
     for name, kw in MODES.items():
         r = solve(grid, **kw)
         assert r.status == "unsolvable" and r.solution is None, name
-        assert r.reason
+        assert r.reason.startswith("No solution")
     assert count_solutions(grid).count == 0

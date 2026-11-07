@@ -50,7 +50,7 @@ def test_csp_experiment_rows_and_correctness():
 def test_reading_experiments_small_run():
     reader = DigitReader.load()
     puzzles, solutions = bank_io.load_bank()[config.DEFAULT_GIVENS]
-    exp1, exp3 = ex.run_reading_experiments(
+    exp1, exp3, log = ex.run_reading_experiments(
         reader, DigitReader(reader.model, 1.0), mnist.load_splits()["test"].images,
         injection.load_pools(), puzzles, solutions, n_seeds=1, per_seed=1, log=lambda *_: None)
     levels = len(config.MISREAD_LEVELS)
@@ -60,3 +60,9 @@ def test_reading_experiments_small_run():
     assert level0.exact.all() and (level0.nodes_expanded == 0).all()
     off = exp3[(exp3.arm == "no_correction") & (exp3.level > 0)]
     assert not off.exact.any()                                      # NN off cannot fix misreads
+    # correction log: one row per correction of the NN-guided system, costs >= 0
+    guided = exp1[exp1.algorithm == config.DEFAULT_ALGORITHM]
+    assert len(log) == guided.n_corrections.fillna(0).sum()
+    assert (log.cost >= 0).all() and (log.read_digit != log.new_digit).all()
+    exact_rows = log[log.puzzle_exact]
+    assert (exact_rows.new_digit == exact_rows.true_digit).all()   # exact => every fix is right

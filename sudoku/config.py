@@ -116,6 +116,7 @@ GOAL_TIME_LIMIT = 2.0        # seconds per goal test
 DEFAULT_ALGORITHM = "astar"   # "ucs", "greedy" or "astar"
 RANDOM_TRIALS = 200      # random-correction baseline: correction sets tried
 N_UNREADABLE_REPORT = 5  # least-confident cells listed when no correction works
+N_UNREADABLE_TOPK = 3    # most probable digits shown for each of those cells
 
 # ---------------------------------------------------------------- demo (run_demo.py)
 DEMO_DIR = RESULTS / "demo"

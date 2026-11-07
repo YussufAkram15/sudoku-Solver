@@ -42,7 +42,7 @@ Run these from the repository root with the venv active. Times are from a 12-cor
 python make_data.py        # download MNIST, split, generate the puzzle bank  (~10 s + download, which
                            #   took 1-19 min depending on the mirror)
 python train.py            # CNN + logistic regression, calibration, digit pools    (~1 min)
-pytest                     # 98 tests                                                (~20 s)
+pytest                     # 99 tests                                                (~20 s)
 python run_demo.py         # integrated demo: --seed 7 --misreads 2 by default       (~5 s)
 python run_experiments.py  # Experiments 1-3 + 100-puzzle recovery study            (~3.5 min)
 ```
@@ -52,7 +52,7 @@ python run_experiments.py  # Experiments 1-3 + 100-puzzle recovery study        
 | `make_data.py` | `--seed N`, `--quick` (6 puzzles per given count into `puzzles_quick.npz`) | `data/raw/`, `data/processed/`, `results/data/sample_mosaic.png` |
 | `train.py` | `--seed N` (training only; the split seed comes from `make_data.py`), `--quick` (1 epoch, 5k images → `models/quick/`) | `models/`, `data/processed/digit_pools.npz`, `results/nn/` |
 | `run_demo.py` | `--seed N`, `--misreads 0..4`, `--givens 25/30/35`, `--algorithm ucs/greedy/astar` | console trace, `results/demo/*.png` |
-| `run_experiments.py` | `--quick` (2 seeds × 3 puzzles, ~25 s → `results/experiments/quick/`), `--replot` (recompute summaries and plots from the per-puzzle CSVs) | `results/experiments/*.csv`, `*.png` |
+| `run_experiments.py` | `--quick` (2 seeds × 3 puzzles, ~25 s → `results/experiments/quick/`), `--replot` (recompute summaries and plots from the per-puzzle CSVs) | `results/experiments/*.csv` (incl. `correction_log.csv`), `*.png` |
 
 MNIST is downloaded with `torchvision.datasets.MNIST` (the yann.lecun.com page is often
 unreachable) and kept in `data/raw/`. The mirror can be slow or cut a transfer short;
@@ -89,7 +89,7 @@ Figures: `demo_pipeline.png` (mosaic → reading → solution), `demo_search.png
 
 ## Tests
 
-`pytest` runs 98 tests in about 20 s. The tests that need the trained model are skipped (not
+`pytest` runs 99 tests in about 20 s. The tests that need the trained model are skipped (not
 failed) if `train.py` has not been run. The brief's categories are pytest markers:
 
 ```bash
@@ -114,6 +114,8 @@ a small problem, and that UCS and A* return the brute-force optimum.
 | Exact recovery, 100 puzzles per level | 0 misreads 100 %, 1: 95 %, 2: 89 %, 3: 87 %, 4: 0 % (budget is 3 corrections) |
 | NN off / random correction | 0 % / 28 % exact recovery at 1 misread, 0 % at 2–4 |
 
+The correction log of every evaluated puzzle (cell, read digit, new digit, cost) is in
+`results/experiments/correction_log.csv`.
 Details, the other experiments and their caveats: `results/experiments/FINDINGS.md`;
 NN metrics: `results/nn/metrics.csv`, `confusion_*.png`, `reliability.png`.
 

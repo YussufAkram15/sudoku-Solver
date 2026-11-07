@@ -87,7 +87,8 @@ def least_confident_cells(read: ReadGrid, n: int = config.N_UNREADABLE_REPORT) -
     conf = read.confidence()
     givens = [(int(r), int(c)) for r, c in zip(*np.nonzero(read.grid))]
     givens.sort(key=lambda cell: (conf[cell], cell))
-    return [UnsureCell(cell, int(read.grid[cell]), read.top_k(*cell, 3)) for cell in givens[:n]]
+    return [UnsureCell(cell, int(read.grid[cell]), read.top_k(*cell, config.N_UNREADABLE_TOPK))
+            for cell in givens[:n]]
 
 
 def solve_reading(read: ReadGrid, algorithm: str = config.DEFAULT_ALGORITHM,

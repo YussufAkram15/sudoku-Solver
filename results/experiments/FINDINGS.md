@@ -31,6 +31,13 @@ retrained models or regenerated banks.
 - The misread pool has only 133 test images (8–32 per digit), so the same hard images recur
   across the 100 puzzles.
 
+## Correction log (P7 deliverable) — `correction_log.csv`
+
+685 corrections on 336 puzzles (NN-guided, A*), one row each with cell, read digit, new digit and
+cost. 94.9 % of them set the true digit and 97.5 % are on a cell where a hard digit was injected.
+No goal test hit its CSP node/time limit in the whole run (`csp_timeouts` = 0 in
+`exp1_per_puzzle.csv`).
+
 ## Experiment 1 — UCS vs Greedy vs A* (`exp1_summary.csv`, `exp1_search.png`)
 
 - Nodes expanded (mean ± std): level 1: UCS 2.0, Greedy 1.2, A* 1.1; level 2: 8.8 / 6.4 / 3.5;

@@ -39,7 +39,6 @@ def test_split_is_seeded_disjoint_and_drops_zeros():
     assert np.array_equal(splits["test"][2], [1, 3])
 
 
-@pytest.mark.normal
 def test_download_retries_then_gives_clear_message(monkeypatch, tmp_path):
     import torchvision.datasets
 
@@ -56,6 +55,7 @@ def test_download_retries_then_gives_clear_message(monkeypatch, tmp_path):
 
 
 # ---------------------------------------------------------------- generator
+@pytest.mark.normal
 @pytest.mark.parametrize("n_givens", config.GIVEN_TARGETS)
 def test_generated_puzzle_has_unique_solution_and_target_givens(n_givens):
     p = generator.generate_puzzle(n_givens, config.make_rng(3))

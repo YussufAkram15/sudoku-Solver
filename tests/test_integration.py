@@ -48,7 +48,6 @@ def test_already_solved_grid_through_pipeline():
     assert result.status == "solved" and result.exact_recovery(KNOWN_SOLUTION)
 
 
-@pytest.mark.normal
 def test_duplicate_pair_sharing_row_and_box_printed_once():
     # (0,1) misread as 3 repeats the 3 at (0,2): same row AND same box -> two conflict entries
     grid, probs = make_reading(misreads={(0, 1): (3, 0.5, 0.4)})
@@ -57,6 +56,7 @@ def test_duplicate_pair_sharing_row_and_box_printed_once():
     assert format_result(r).count("at [(0, 1), (0, 2)]") == 1
 
 
+@pytest.mark.normal
 def test_nn_off_mode_does_not_correct():
     read = reading(*make_reading(**ONE_MISREAD))
     off = solve_reading(read, nn_correction=False)

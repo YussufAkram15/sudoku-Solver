@@ -12,6 +12,8 @@ Experiment 3  NN-guided correction (A*) vs no correction (NN off) vs random corr
               given, any digit), plus extension arms "random within the 15 candidate cells and
               their top-3 alternatives" (isolates the value of NN cost ordering) and
               "NN-guided without temperature scaling": exact recovery per level.
+Correction log  every correction the NN-guided system (A*) made on every evaluated puzzle:
+              cell, read digit, new digit, cost (P7 deliverable).
 Recovery      NN-guided (A*) exact-solution recovery on 100 puzzles per misread level, with a
               breakdown that adds up to the number of puzzles: exact without corrections /
               exact after corrections / wrong solution (a grid was produced but it is not the
@@ -55,8 +57,12 @@ def misread_cells_are_candidates(read, injected) -> bool:
 # ---------------------------------------------------------------- Experiments 1 and 3 + recovery
 def run_reading_experiments(reader, reader_no_t, test_images, pools, puzzles, solutions,
                             n_seeds: int, per_seed: int, seed: int = config.SEED, log=print):
-    """One pass over (seed, level, puzzle). Returns (exp1_rows, exp3_rows) as DataFrames."""
-    exp1, exp3 = [], []
+    """One pass over (seed, level, puzzle).
+
+    Returns DataFrames (exp1_rows, exp3_rows, correction_log) - the log has one row per correction
+    made by the NN-guided system (default algorithm).
+    """
+    exp1, exp3, log_rows = [], [], []
     for s in range(n_seeds):
         for k in config.MISREAD_LEVELS:
             start = time.perf_counter()
@@ -83,10 +89,20 @@ def run_reading_experiments(reader, reader_no_t, test_images, pools, puzzles, so
                                  "nodes_pruned": st.nodes_pruned if st else 0,
                                  "goal_tests": st.goal_tests if st else 0,
                                  "csp_calls": st.csp_calls if st else 0,
+                                 "csp_timeouts": st.csp_timeouts if st else 0,
                                  "max_frontier": st.max_frontier if st else 0,
                                  "seconds": st.seconds if st else 0.0})
+                guided = results[config.DEFAULT_ALGORITHM]
+                for row in guided.corrections:
+                    log_rows.append({"seed": s, "level": k, "puzzle": idx,
+                                     "algorithm": config.DEFAULT_ALGORITHM,
+                                     "row": row.cell[0], "col": row.cell[1],
+                                     "read_digit": row.read_digit, "new_digit": row.new_digit,
+                                     "cost": row.cost, "true_digit": int(truth[row.cell]),
+                                     "cell_was_injected": row.cell in injected,
+                                     "puzzle_exact": guided.exact_recovery(truth)})
                 arms = {
-                    "nn_guided": results[config.DEFAULT_ALGORITHM],
+                    "nn_guided": guided,
                     "no_correction": solve_reading(read, nn_correction=False),
                     "nn_guided_no_T (ext.)": solve_reading(
                         reader_no_t.read_mosaic(mosaic), algorithm=config.DEFAULT_ALGORITHM),
@@ -102,7 +118,9 @@ def run_reading_experiments(reader, reader_no_t, test_images, pools, puzzles, so
                                  "exact": rand.solution is not None
                                  and np.array_equal(rand.solution, truth)})
             log(f"  seed {s} level {k}: {per_seed} puzzles in {time.perf_counter() - start:.1f}s")
-    return pd.DataFrame(exp1), pd.DataFrame(exp3)
+    log_columns = ["seed", "level", "puzzle", "algorithm", "row", "col", "read_digit", "new_digit",
+                   "cost", "true_digit", "cell_was_injected", "puzzle_exact"]
+    return pd.DataFrame(exp1), pd.DataFrame(exp3), pd.DataFrame(log_rows, columns=log_columns)
 
 
 # ---------------------------------------------------------------- Experiment 2

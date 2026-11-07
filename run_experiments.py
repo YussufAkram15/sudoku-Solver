@@ -7,6 +7,7 @@ Experiment 1: UCS vs Greedy vs A* (nodes, recovery) for misread levels 0-4.
 Experiment 2: BT vs BT+FC vs BT+FC+AC-3 (+MAC) on 25 / 30 / 35-given puzzles.
 Experiment 3: NN-guided vs no correction vs random correction (+ NN without temperature).
 Recovery:     exact-solution recovery on 100 puzzles per misread level.
+Correction log: correction_log.csv, every correction of every evaluated puzzle (NN-guided).
 Every table reports mean and std over seeds (see sudoku/eval/experiments.py).
 Needs `python make_data.py` and `python train.py` first.
 """
@@ -31,7 +32,7 @@ from sudoku.search import ALGORITHMS  # noqa: E402
 LEVELS = list(config.MISREAD_LEVELS)
 # cost / n_corrections are NaN for unsolved puzzles, so their means cover solved puzzles only
 EXP1_METRICS = ["nodes_expanded", "nodes_generated", "nodes_pruned", "goal_tests", "csp_calls",
-                "seconds", "cost", "n_corrections", "exact"]
+                "csp_timeouts", "seconds", "cost", "n_corrections", "exact"]
 EXP2_METRICS = ["assignments", "backtracks", "ac3_revisions", "values_pruned", "seconds",
                 "timeout", "correct"]
 
@@ -159,8 +160,9 @@ def main() -> None:
 
     print("[1/2] Experiments 1 + 3 and recovery study (30 givens, misread levels 0-4)")
     puzzles, solutions = bank[config.DEFAULT_GIVENS]
-    exp1, exp3 = ex.run_reading_experiments(reader, reader_no_t, test.images, pools, puzzles,
-                                            solutions, n_seeds, per_seed)
+    exp1, exp3, corrections = ex.run_reading_experiments(reader, reader_no_t, test.images, pools,
+                                                         puzzles, solutions, n_seeds, per_seed)
+    corrections.to_csv(out / "correction_log.csv", index=False)
     print("[2/2] Experiment 2 (CSP modes)")
     exp2 = ex.run_csp_experiment(bank, n_seeds, per_seed)
 

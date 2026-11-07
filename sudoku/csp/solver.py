@@ -117,17 +117,19 @@ class _Search:
             clash = given_conflict(self.grid)
             if clash:
                 v1, v2, d = clash
-                return False, f"givens conflict: digit {d} at {cell(v1)} and {cell(v2)}", v2
+                return False, (f"No solution: givens conflict: digit {d} at {cell(v1)} "
+                               f"and {cell(v2)}"), v2
         if self.use_ac3:
             ok, wiped = ac3(self.domains, self.stats)
             if not ok:
-                return False, f"AC-3 emptied the domain of cell {cell(wiped)}", wiped
+                return False, f"No solution: AC-3 emptied the domain of cell {cell(wiped)}", wiped
         if self.use_fc:
             for v in range(N_VARS):
                 if self.value[v]:
                     ok, wiped = self.forward_check(v, self.value[v], [])
                     if not ok:
-                        return False, f"forward checking emptied the domain of cell {cell(wiped)}", wiped
+                        return False, ("No solution: forward checking emptied the domain of "
+                                       f"cell {cell(wiped)}"), wiped
         return True, "", None
 
     # ------------------------------------------------------------ search pieces
@@ -219,7 +221,8 @@ def _run(grid, use_fc, use_ac3, use_mac, ordering, node_limit, time_limit, solut
         try:
             s.search()
             status = SOLVED if s.solutions else UNSOLVABLE
-            reason = "" if s.solutions else "search exhausted: no assignment satisfies all constraints"
+            reason = "" if s.solutions else ("No solution: search exhausted, no assignment "
+                                             "satisfies all constraints")
         except _Timeout as stop:
             status, reason = TIMEOUT, str(stop)
     s.stats.seconds = time.perf_counter() - s.start
