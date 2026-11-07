@@ -138,17 +138,21 @@ def pipeline(mosaic: np.ndarray, reader: DigitReader | None = None, **kwargs) ->
     return solve_reading(reader.read_mosaic(mosaic), **kwargs)
 
 
+def format_ac3(check: AC3Check, grid) -> list:
+    """Text lines describing the AC-3 check of the read grid."""
+    if check.consistent:
+        lines = ["AC-3 on the read grid: consistent"]
+    else:
+        lines = [f"AC-3 on the read grid: CONTRADICTION (domain of cell {check.wiped_cell} emptied)"]
+    for conflict in dict.fromkeys(check.duplicates):  # a pair sharing row AND box is listed once
+        lines.append(f"  duplicate digit {grid[next(iter(conflict))]} at {sorted(conflict)}")
+    return lines
+
+
 def format_result(result: PipelineResult) -> str:
     """Readable multi-line summary (used by run_demo.py)."""
     lines = [f"status: {result.status} - {result.message}"]
-    check = result.ac3_check
-    if check.consistent:
-        lines.append("AC-3 on the read grid: consistent")
-    else:
-        lines.append(f"AC-3 on the read grid: CONTRADICTION (domain of cell {check.wiped_cell} emptied)")
-    for conflict in dict.fromkeys(check.duplicates):  # a pair sharing row AND box is listed once
-        lines.append(f"  duplicate digit {result.read.grid[next(iter(conflict))]} at "
-                     f"{sorted(conflict)}")
+    lines += format_ac3(result.ac3_check, result.read.grid)
     for row in result.corrections:
         lines.append(f"  correction {row.cell}: {row.read_digit} -> {row.new_digit}"
                      f"  cost {row.cost:.3f}")

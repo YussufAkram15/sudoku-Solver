@@ -116,6 +116,12 @@ DEFAULT_ALGORITHM = "astar"   # "ucs", "greedy" or "astar"
 RANDOM_TRIALS = 200      # random-correction baseline: correction sets tried
 N_UNREADABLE_REPORT = 5  # least-confident cells listed when no correction works
 
+# ---------------------------------------------------------------- demo (run_demo.py)
+DEMO_DIR = RESULTS / "demo"
+DEMO_MISREADS = 2          # default --misreads
+DEMO_TRACE_ROWS = 25       # popped search nodes printed in the console trace
+DEMO_BATCH_PUZZLES = 5     # puzzles per misread level in the NN on/off comparison plot
+
 # ---------------------------------------------------------------- experiments
 N_SEEDS = 5
 PUZZLES_PER_SEED = 20    # 5 seeds x 20 = 100 puzzles per misread level
