@@ -5,7 +5,8 @@
 
 1. Blank detection (brightness rule) + CNN reading -> read grid + probabilities per cell.
 2. AC-3 check of the read grid. If it is consistent and the CSP solves it (uniquely, in "unique"
-   goal mode) -> status "solved", no corrections.
+   goal mode) -> status "solved", no corrections. With NN correction on, this solvability test is
+   the search's goal test of its root (the empty correction set), so the grid is tested once.
 3. Otherwise, with ``nn_correction=True``, run the correction search (UCS / Greedy / A*); the first
    goal state popped wins -> status "corrected".
 4. If nothing works within the budget (or ``nn_correction=False``, the "NN off" mode) -> status
@@ -65,6 +66,8 @@ class PipelineResult:
 
     @property
     def solved(self) -> bool:
+        """The system produced a grid. NOT the same as correct: a misread can leave a different
+        uniquely solvable puzzle. Recovery rates must use ``exact_recovery``."""
         return self.status in (SOLVED, CORRECTED)
 
     def exact_recovery(self, true_solution) -> bool:
@@ -97,16 +100,18 @@ def solve_reading(read: ReadGrid, algorithm: str = config.DEFAULT_ALGORITHM,
     result = PipelineResult(UNREADABLE, UNREADABLE_MESSAGE, read, check_ac3(read.grid),
                             nn_correction, algorithm)
 
-    # Step 2: consistent and solvable as read -> no corrections.
-    if result.ac3_check.consistent and problem.goal_test(problem.initial_state):
-        result.status, result.message = SOLVED, "Solved as read (no corrections needed)"
-        result.solution = problem.solutions[problem.initial_state]
-        return result
+    # Step 2 (NN off): is the raw reading consistent and solvable?
+    if not nn_correction:
+        if result.ac3_check.consistent and problem.goal_test(problem.initial_state):
+            return _solved_as_read(result, problem.solutions[problem.initial_state])
 
-    # Step 3: NN-guided correction search.
-    if nn_correction:
+    # Steps 2 + 3 (NN on): the search goal-tests the uncorrected grid first (step 2), then
+    # tries correction sets (step 3).
+    else:
         found = search(problem, algorithm, **search_kwargs)
         result.search = found
+        if found.found and not found.state:
+            return _solved_as_read(result, found.solution)
         if found.found:
             result.status = CORRECTED
             result.message = (f"Solved after {len(found.corrections)} correction(s), "
@@ -117,6 +122,13 @@ def solve_reading(read: ReadGrid, algorithm: str = config.DEFAULT_ALGORITHM,
 
     # Step 4: unreadable.
     result.least_confident = least_confident_cells(read)
+    return result
+
+
+def _solved_as_read(result: PipelineResult, solution: np.ndarray) -> PipelineResult:
+    """Fill in the step-2 outcome: solvable with no corrections."""
+    result.status, result.message = SOLVED, "Solved as read (no corrections needed)"
+    result.solution = solution
     return result
 
 
@@ -134,7 +146,7 @@ def format_result(result: PipelineResult) -> str:
         lines.append("AC-3 on the read grid: consistent")
     else:
         lines.append(f"AC-3 on the read grid: CONTRADICTION (domain of cell {check.wiped_cell} emptied)")
-    for conflict in check.duplicates:
+    for conflict in dict.fromkeys(check.duplicates):  # a pair sharing row AND box is listed once
         lines.append(f"  duplicate digit {result.read.grid[next(iter(conflict))]} at "
                      f"{sorted(conflict)}")
     for row in result.corrections:

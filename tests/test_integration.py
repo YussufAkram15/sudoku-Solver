@@ -31,7 +31,10 @@ def test_one_misread_is_corrected_and_logged():
 @pytest.mark.edge
 def test_zero_misreads_solved_without_search():
     r = solve_reading(reading(*make_reading()))
-    assert r.status == "solved" and r.search is None and r.corrections == []
+    assert r.status == "solved" and r.corrections == []
+    assert r.search.stats.nodes_expanded == 0 and r.search.stats.goal_tests == 1  # root only
+    off = solve_reading(reading(*make_reading()), nn_correction=False)
+    assert off.status == "solved" and off.search is None
     assert r.ac3_check.consistent and r.exact_recovery(KNOWN_SOLUTION)
 
 
@@ -46,6 +49,14 @@ def test_already_solved_grid_through_pipeline():
 
 
 @pytest.mark.normal
+def test_duplicate_pair_sharing_row_and_box_printed_once():
+    # (0,1) misread as 3 repeats the 3 at (0,2): same row AND same box -> two conflict entries
+    grid, probs = make_reading(misreads={(0, 1): (3, 0.5, 0.4)})
+    r = solve_reading(reading(grid, probs))
+    assert r.ac3_check.duplicates.count(frozenset({(0, 1), (0, 2)})) == 2
+    assert format_result(r).count("at [(0, 1), (0, 2)]") == 1
+
+
 def test_nn_off_mode_does_not_correct():
     read = reading(*make_reading(**ONE_MISREAD))
     off = solve_reading(read, nn_correction=False)
