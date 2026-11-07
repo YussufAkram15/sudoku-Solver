@@ -86,9 +86,9 @@ def print_trace(search_result, rows: int = config.DEMO_TRACE_ROWS) -> None:
 
 
 # ---------------------------------------------------------------- the three comparisons
-def compare_algorithms(read) -> dict:
+def compare_algorithms(read, goal_mode: str = config.GOAL_MODE) -> dict:
     """Run UCS, Greedy and A* on the same reading."""
-    return {a: solve_reading(read, algorithm=a) for a in ALGORITHMS}
+    return {a: solve_reading(read, algorithm=a, goal_mode=goal_mode) for a in ALGORITHMS}
 
 
 def compare_csp_modes(grid) -> dict:
@@ -96,7 +96,8 @@ def compare_csp_modes(grid) -> dict:
     return {name: solve(grid, ordering=config.ORDERING, **kw) for name, kw in CSP_MODES.items()}
 
 
-def nn_on_off_batch(reader, pools, test_images, givens: int, seed: int) -> dict:
+def nn_on_off_batch(reader, pools, test_images, givens: int, seed: int,
+                    goal_mode: str = config.GOAL_MODE) -> dict:
     """Exact recovery rate per misread level with NN-guided correction on and off."""
     rates = {"on": [], "off": []}
     for k in config.MISREAD_LEVELS:
@@ -106,8 +107,9 @@ def nn_on_off_batch(reader, pools, test_images, givens: int, seed: int) -> dict:
             p = generator.generate_puzzle(givens, rng)
             mosaic, _, _ = injection.make_level_mosaic(p.puzzle, k, pools, test_images, rng)
             read = reader.read_mosaic(mosaic)
-            hits["on"] += solve_reading(read, nn_correction=True).exact_recovery(p.solution)
-            hits["off"] += solve_reading(read, nn_correction=False).exact_recovery(p.solution)
+            for mode, on in (("on", True), ("off", False)):
+                result = solve_reading(read, nn_correction=on, goal_mode=goal_mode)
+                hits[mode] += result.exact_recovery(p.solution)
         for mode in rates:
             rates[mode].append(hits[mode] / config.DEMO_BATCH_PUZZLES)
     return rates
@@ -203,6 +205,20 @@ def figure_nn_on_off(rates: dict, path) -> None:
 
 
 # ---------------------------------------------------------------- main
+DEFAULTS = {"seed": config.SEED, "misreads": config.DEMO_MISREADS, "givens": config.DEFAULT_GIVENS,
+            "algorithm": config.DEFAULT_ALGORITHM, "goal": config.GOAL_MODE}
+
+
+def demo_folder(args):
+    """results/demo/ for the default run (committed figures); a git-ignored sub-folder named
+    after the arguments for any other run, so live demos never overwrite the committed PNGs."""
+    if all(getattr(args, k) == v for k, v in DEFAULTS.items()):
+        return config.DEMO_DIR
+    name = (f"seed{args.seed}_misreads{args.misreads}_givens{args.givens}_{args.algorithm}"
+            f"_{args.goal}")
+    return config.DEMO_DIR / "runs" / name
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument("--seed", type=int, default=config.SEED)
@@ -211,8 +227,10 @@ def main() -> None:
     parser.add_argument("--givens", type=int, default=config.DEFAULT_GIVENS,
                         choices=config.GIVEN_TARGETS)
     parser.add_argument("--algorithm", default=config.DEFAULT_ALGORITHM, choices=ALGORITHMS)
+    parser.add_argument("--goal", default=config.GOAL_MODE, choices=("unique", "solvable"),
+                        help='"solvable" = the brief\'s minimum version (at least one solution)')
     args = parser.parse_args()
-    out = config.DEMO_DIR
+    out = demo_folder(args)
 
     reader = DigitReader.load()
     test = mnist.load_splits()["test"]
@@ -220,10 +238,10 @@ def main() -> None:
     puzzle, mosaic, injected = make_instance(args.seed, args.givens, args.misreads, pools, test.images)
 
     print(f"=== Input: {args.givens}-given puzzle, seed {args.seed}, {args.misreads} hard digits "
-          f"injected at {injected}")
+          f"injected at {injected}; goal: {args.goal}")
     print(grid_text(puzzle.puzzle))
 
-    results = compare_algorithms(reader.read_mosaic(mosaic))
+    results = compare_algorithms(reader.read_mosaic(mosaic), args.goal)
     result = results[args.algorithm]
     read = result.read
     misread = [tuple(map(int, rc)) for rc in np.argwhere((read.grid != puzzle.puzzle) & (puzzle.puzzle > 0))]
@@ -268,7 +286,7 @@ def main() -> None:
               f"{st.ac3_revisions:8d} {st.values_pruned:8d}")
 
     print(f"\n=== 6. NN-guided correction on vs off ({config.DEMO_BATCH_PUZZLES} puzzles per level)")
-    rates = nn_on_off_batch(reader, pools, test.images, args.givens, args.seed)
+    rates = nn_on_off_batch(reader, pools, test.images, args.givens, args.seed, args.goal)
     for k, on, off in zip(config.MISREAD_LEVELS, rates["on"], rates["off"]):
         print(f"  {k} misreads: exact recovery ON {on:.0%}   OFF {off:.0%}")
 

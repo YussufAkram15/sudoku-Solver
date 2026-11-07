@@ -42,7 +42,7 @@ Run these from the repository root with the venv active. Times are from a 12-cor
 python make_data.py        # download MNIST, split, generate the puzzle bank  (~10 s + download, which
                            #   took 1-19 min depending on the mirror)
 python train.py            # CNN + logistic regression, calibration, digit pools    (~1 min)
-pytest                     # 99 tests                                                (~20 s)
+pytest                     # 100 tests                                               (~20 s)
 python run_demo.py         # integrated demo: --seed 7 --misreads 2 by default       (~5 s)
 python run_experiments.py  # Experiments 1-3 + 100-puzzle recovery study            (~3.5 min)
 ```
@@ -51,7 +51,7 @@ python run_experiments.py  # Experiments 1-3 + 100-puzzle recovery study        
 |---|---|---|
 | `make_data.py` | `--seed N`, `--quick` (6 puzzles per given count into `puzzles_quick.npz`) | `data/raw/`, `data/processed/`, `results/data/sample_mosaic.png` |
 | `train.py` | `--seed N` (training only; the split seed comes from `make_data.py`), `--quick` (1 epoch, 5k images → `models/quick/`) | `models/`, `data/processed/digit_pools.npz`, `results/nn/` |
-| `run_demo.py` | `--seed N`, `--misreads 0..4`, `--givens 25/30/35`, `--algorithm ucs/greedy/astar` | console trace, `results/demo/*.png` |
+| `run_demo.py` | `--seed N`, `--misreads 0..4`, `--givens 25/30/35`, `--algorithm ucs/greedy/astar`, `--goal unique/solvable` | console trace, `results/demo/*.png` (other arguments: `results/demo/runs/…`) |
 | `run_experiments.py` | `--quick` (2 seeds × 3 puzzles, ~25 s → `results/experiments/quick/`), `--replot` (recompute summaries and plots from the per-puzzle CSVs) | `results/experiments/*.csv` (incl. `correction_log.csv`), `*.png` |
 
 MNIST is downloaded with `torchvision.datasets.MNIST` (the yann.lecun.com page is often
@@ -71,7 +71,10 @@ digits, the search trace (every popped state with g, h and f), the UCS / Greedy 
 the correction log (cell, read digit, new digit, cost), the solved grid with an exact-recovery
 check, CSP work with BT / BT+FC / BT+FC+AC-3 / MAC, and recovery with NN-guided correction on vs off.
 Figures: `demo_pipeline.png` (mosaic → reading → solution), `demo_search.png`, `demo_csp.png`,
-`demo_nn_on_off.png`. `--misreads 4` shows the "unreadable" path.
+`demo_nn_on_off.png`. `--misreads 4` shows the "unreadable" path and `--goal solvable` the
+brief's minimum version (goal = at least one solution instead of exactly one). The default run
+writes to `results/demo/` (committed); any other arguments write to a git-ignored
+`results/demo/runs/<arguments>/` folder, so live demos never overwrite the committed figures.
 
 ## Module map
 
@@ -89,7 +92,7 @@ Figures: `demo_pipeline.png` (mosaic → reading → solution), `demo_search.png
 
 ## Tests
 
-`pytest` runs 99 tests in about 20 s. The tests that need the trained model are skipped (not
+`pytest` runs 100 tests in about 20 s. The tests that need the trained model are skipped (not
 failed) if `train.py` has not been run. The brief's categories are pytest markers:
 
 ```bash

@@ -161,7 +161,8 @@ def main() -> None:
     print("[1/2] Experiments 1 + 3 and recovery study (30 givens, misread levels 0-4)")
     puzzles, solutions = bank[config.DEFAULT_GIVENS]
     exp1, exp3, corrections = ex.run_reading_experiments(reader, reader_no_t, test.images, pools,
-                                                         puzzles, solutions, n_seeds, per_seed)
+                                                         puzzles, solutions, n_seeds, per_seed,
+                                                         seed=bank["seed"])
     corrections.to_csv(out / "correction_log.csv", index=False)
     print("[2/2] Experiment 2 (CSP modes)")
     exp2 = ex.run_csp_experiment(bank, n_seeds, per_seed)

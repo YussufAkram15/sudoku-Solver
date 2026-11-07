@@ -47,6 +47,7 @@ def test_csp_experiment_rows_and_correctness():
 
 
 @needs_model
+@pytest.mark.skipif(not config.PUZZLES_FILE.exists(), reason="run make_data.py (full bank) first")
 def test_reading_experiments_small_run():
     reader = DigitReader.load()
     puzzles, solutions = bank_io.load_bank()[config.DEFAULT_GIVENS]

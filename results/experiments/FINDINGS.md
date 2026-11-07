@@ -49,7 +49,8 @@ No goal test hit its CSP node/time limit in the whole run (`csp_timeouts` = 0 in
   reported separately as `nodes_pruned`; UCS never prunes. On exhausted searches UCS's "expanded"
   includes every 3-correction leaf.
 - Wall-clock time includes computing h, so A* is slower per node than UCS: at level 4 A* takes
-  0.37 s vs UCS 0.21 s although it expands about 4× fewer nodes.
+  about twice as long as UCS (0.36 s vs 0.17 s in `exp1_summary.csv`; timings vary between runs)
+  although it expands about 4× fewer nodes.
 
 ## Experiment 2 — BT vs BT+FC vs BT+FC+AC-3 (`exp2_summary.csv`, `exp2_csp.png`)
 

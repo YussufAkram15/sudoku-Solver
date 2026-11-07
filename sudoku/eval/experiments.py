@@ -1,7 +1,8 @@
 """The three experiments of the brief plus the 100-puzzle exact-recovery study.
 
 Seeds and puzzles. "Seed" s = 0..N_SEEDS-1 is one independent run: it uses bank puzzles
-s*PUZZLES_PER_SEED .. (s+1)*PUZZLES_PER_SEED - 1 and seeds every mosaic with (SEED, s, k, i).
+s*PUZZLES_PER_SEED .. (s+1)*PUZZLES_PER_SEED - 1 and seeds every mosaic with (seed, s, k, i), where
+seed is the generator seed stored in the puzzle bank (config.SEED by default).
 Statistics: first the mean (or rate) over the puzzles of one seed, then mean ± std over seeds.
 
 Experiment 1  UCS vs Greedy vs A*: nodes expanded / generated / pruned, goal tests, time and exact

@@ -27,8 +27,23 @@ def test_demo_runs_and_saves_figures(tmp_path, monkeypatch, capsys, misreads):
         assert "correction (" in out
     else:  # 4 misreads exceed the 3-correction budget
         assert UNREADABLE_MESSAGE in out and "least confident cells" in out
-    names = {p.name for p in tmp_path.iterdir()}
+    names = {p.name for p in tmp_path.rglob("*.png")}
+    if misreads != 2:  # non-default arguments go to their own sub-folder
+        assert (tmp_path / "runs").is_dir() and not list(tmp_path.glob("*.png"))
     assert names == {"demo_pipeline.png", "demo_search.png", "demo_csp.png", "demo_nn_on_off.png"}
+
+
+def test_minimum_version_goal_flag(tmp_path, monkeypatch, capsys):
+    """--goal solvable runs the brief's minimum version (at least one solution)."""
+    if not (config.MODELS / config.CNN_FILE).exists():
+        pytest.skip("run train.py first")
+    monkeypatch.setattr(config, "DEMO_DIR", tmp_path)
+    monkeypatch.setattr(config, "DEMO_BATCH_PUZZLES", 1)
+    monkeypatch.setattr(sys, "argv", ["run_demo.py", "--misreads", "1", "--algorithm", "ucs",
+                                      "--goal", "solvable"])
+    run_demo.main()
+    out = capsys.readouterr().out
+    assert "goal: solvable" in out and "status: corrected" in out
 
 
 def test_grid_text_marks_and_blanks():

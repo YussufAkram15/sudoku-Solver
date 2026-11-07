@@ -14,3 +14,6 @@ models/*
 # Smoke-test outputs of train.py --quick
 results/nn/quick/
 results/experiments/quick/
+
+# run_demo.py with non-default arguments
+results/demo/runs/
