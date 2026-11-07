@@ -19,6 +19,7 @@ def test_digit_class_mapping_round_trip():
     assert np.array_equal(mnist.class_to_digit(mnist.digit_to_class(digits)), digits)
 
 
+@pytest.mark.normal
 def test_split_is_seeded_disjoint_and_drops_zeros():
     rng = np.random.default_rng(0)
     labels = rng.integers(0, 10, size=config.MNIST_TRAIN_SIZE)
@@ -38,6 +39,7 @@ def test_split_is_seeded_disjoint_and_drops_zeros():
     assert np.array_equal(splits["test"][2], [1, 3])
 
 
+@pytest.mark.normal
 # ---------------------------------------------------------------- generator
 @pytest.mark.parametrize("n_givens", config.GIVEN_TARGETS)
 def test_generated_puzzle_has_unique_solution_and_target_givens(n_givens):
@@ -49,6 +51,7 @@ def test_generated_puzzle_has_unique_solution_and_target_givens(n_givens):
     assert generator.count_solutions(p.puzzle, limit=5) == 1
 
 
+@pytest.mark.normal
 def test_generator_is_reproducible_per_puzzle_seed():
     a = generator.generate_bank(30, 3, seed=11)
     b = generator.generate_bank(30, 3, seed=11)
@@ -58,9 +61,14 @@ def test_generator_is_reproducible_per_puzzle_seed():
     assert not np.array_equal(a[0].puzzle, a[1].puzzle)  # puzzles in one bank differ
 
 
-def test_count_solutions_detects_clash_and_multiple_solutions():
+@pytest.mark.edge
+def test_already_solved_grid_has_exactly_one_solution():
     solution = generator.generate_full_grid(config.make_rng(0))
-    assert generator.count_solutions(solution) == 1           # already-solved grid
+    assert generator.count_solutions(solution, limit=5) == 1
+
+
+@pytest.mark.impossible
+def test_count_solutions_detects_clash_and_multiple_solutions():
     empty = np.zeros((N, N), int)
     assert generator.count_solutions(empty, limit=2) == 2     # many solutions, stops at limit
     clash = empty.copy()
@@ -93,6 +101,7 @@ def test_count_solutions_counts_exactly_two():
     assert generator.count_solutions(puzzle, limit=10) == 2
 
 
+@pytest.mark.impossible
 def test_impossible_target_raises_clear_error():
     with pytest.raises(ValueError, match="n_givens"):
         generator.generate_puzzle(10, config.make_rng(0))
@@ -119,6 +128,7 @@ def _fake_images(n_per_digit=4):
     return images, digits
 
 
+@pytest.mark.normal
 def test_mosaic_layout_blanks_and_round_trip():
     images, digits = _fake_images()
     p = generator.generate_puzzle(30, config.make_rng(4))
@@ -136,6 +146,7 @@ def test_mosaic_layout_blanks_and_round_trip():
     assert np.array_equal(tiles[r, c], images[tile_index[r, c]])
 
 
+@pytest.mark.edge
 def test_detect_blanks_threshold_edge():
     image = np.zeros((N * T, N * T), np.float32)
     image[:T, :T] = config.BLANK_THRESHOLD * 1.1    # just above threshold -> not blank
@@ -154,6 +165,7 @@ def _probs_for(true_digits, top1, second):
     return probs
 
 
+@pytest.mark.normal
 def test_pool_rules_follow_documented_definition():
     digits = np.array([1, 1, 1, 2, 2])
     probs = np.zeros((5, 9))
@@ -183,6 +195,7 @@ def test_build_pools_exact_mode_separates_clean_and_misread():
     assert loose.base[1].tolist() == [0, 1] and loose.inject[1].tolist() == [0, 1]
 
 
+@pytest.mark.normal
 @pytest.mark.parametrize("k", config.MISREAD_LEVELS)
 def test_inject_replaces_exactly_k_givens_with_same_digit(k):
     images, digits = _fake_images()
@@ -195,13 +208,15 @@ def test_inject_replaces_exactly_k_givens_with_same_digit(k):
     new_index, cells = injection.inject_hard_digits(p.puzzle, tile_index, k, hard, config.make_rng(9))
     changed = np.argwhere(new_index != tile_index)
     assert len(cells) == k and sorted(map(tuple, changed.tolist())) == cells
-    assert is_hard[new_index[tuple(np.array(cells).T)]].all() if k else True
+    for r, c in cells:
+        assert is_hard[new_index[r, c]]                               # injected image is hard
     given = p.puzzle != 0
     assert np.array_equal(digits[new_index[given]], p.puzzle[given])  # digits never change
     again, _ = injection.inject_hard_digits(p.puzzle, tile_index, k, hard, config.make_rng(9))
     assert np.array_equal(new_index, again)                           # seeded
 
 
+@pytest.mark.impossible
 def test_inject_more_than_eligible_raises():
     p = generator.generate_puzzle(30, config.make_rng(2))
     empty_pools = {d: np.array([], int) for d in config.DIGITS}
@@ -214,6 +229,7 @@ def test_inject_more_than_eligible_raises():
 @pytest.mark.skipif(not config.SPLITS_FILE.exists(), reason="run make_data.py first")
 def test_saved_splits_match_documented_sizes():
     splits = mnist.load_splits()
+    assert isinstance(mnist.split_seed(), int)
     assert len(splits["train"]) + len(splits["val"]) == config.MNIST_TRAIN_NONZERO
     assert len(splits["test"]) == config.MNIST_TEST_NONZERO
     for part in splits.values():

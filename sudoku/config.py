@@ -55,8 +55,9 @@ HARD_PROB_THRESHOLD = 0.6   # pool rule from the brief: wrong read, or top-1 pro
 HARD_TOPK = 3               # ...and the true digit must be within the model's top-k
 # True: "k misreads" means exactly k cells the model reads WRONG. The k injected tiles come from the
 # wrong-read part of the hard pool and every other given uses a test image the model reads correctly.
-# False: inject from the whole hard pool (brief's literal rule); some injected tiles may still be read
-# correctly, so the actual number of misreads can be below k.
+# False: inject from the whole hard pool (brief's literal rule) and use any test image for the other
+# givens; injected tiles may still be read correctly and other tiles may be misread, so the actual
+# number of misreads can differ from k (below or above).
 EXACT_MISREADS = True
 
 # ---------------------------------------------------------------- neural network

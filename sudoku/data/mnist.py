@@ -98,10 +98,10 @@ def make_splits(train_images, train_labels, test_images, test_labels, seed: int 
     }
 
 
-def save_splits(splits: dict, path: Path = config.SPLITS_FILE) -> None:
-    """Save the output of ``make_splits`` as one compressed .npz file."""
+def save_splits(splits: dict, seed: int, path: Path = config.SPLITS_FILE) -> None:
+    """Save the output of ``make_splits`` (made with ``seed``) as one compressed .npz file."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    arrays = {}
+    arrays = {"seed": np.int64(seed)}
     for name, (images, digits, source_idx) in splits.items():
         arrays[f"{name}_images"] = images.astype(np.uint8)
         arrays[f"{name}_digits"] = digits
@@ -110,7 +110,10 @@ def save_splits(splits: dict, path: Path = config.SPLITS_FILE) -> None:
 
 
 def load_splits(path: Path = config.SPLITS_FILE) -> dict:
-    """Load train/val/test ``DigitSplit`` objects with pixels scaled to 0..1."""
+    """Load train/val/test ``DigitSplit`` objects with pixels scaled to 0..1.
+
+    The split seed is stored in the file and can be read with ``split_seed(path)``.
+    """
     if not path.exists():
         raise FileNotFoundError(f"{path} missing - run `python make_data.py` first")
     with np.load(path) as data:
@@ -122,6 +125,12 @@ def load_splits(path: Path = config.SPLITS_FILE) -> dict:
             )
             for name in ("train", "val", "test")
         }
+
+
+def split_seed(path: Path = config.SPLITS_FILE) -> int:
+    """Seed that produced the saved split."""
+    with np.load(path) as data:
+        return int(data["seed"])
 
 
 def check_split_sizes(splits: dict, train_labels, test_labels) -> None:

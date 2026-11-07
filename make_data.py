@@ -32,7 +32,7 @@ def prepare_mnist(seed: int) -> dict:
     train_x, train_y, test_x, test_y = mnist.download_mnist()
     splits = mnist.make_splits(train_x, train_y, test_x, test_y, seed)
     mnist.check_split_sizes(splits, train_y, test_y)
-    mnist.save_splits(splits)
+    mnist.save_splits(splits, seed)
     for name, (images, _, _) in splits.items():
         print(f"  {name:5s}: {len(images):6d} images (digits 1-9)")
     print(f"  saved {config.SPLITS_FILE.relative_to(config.ROOT)}")

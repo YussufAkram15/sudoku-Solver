@@ -36,6 +36,7 @@ Written by `make_data.py` (`sudoku/data/mnist.py`). Rule:
 | `P_images` | (n, 28, 28) uint8 | pixel values 0–255 exactly as in MNIST | REAL |
 | `P_digits` | (n,) int64 | true digit 1–9 | REAL |
 | `P_source_idx` | (n,) int64 | row of the image in the original MNIST train (train/val) or test file | GENERATED (bookkeeping) |
+| `seed` | scalar int64 | seed of the train/validation permutation | GENERATED |
 
 Preprocessing on load (`load_splits`): pixels converted to float32 and divided by 255 → range 0–1.
 No other normalisation, no augmentation.
