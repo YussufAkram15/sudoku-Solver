@@ -44,7 +44,7 @@ No goal test hit its CSP node/time limit in the whole run (`csp_timeouts` = 0 in
   level 3: 52.5 / 23.3 / 11.2; level 4 (exhausted): 8,200 / 2,130 / 2,150.
 - A* always found the same cost as UCS (optimal); Greedy found a more expensive correction set in
   26 of 440 puzzles both solved (mean cost of solved puzzles, `cost_mean` in `exp1_summary.csv`:
-  level 3 A* 4.56 vs Greedy 5.32), and has lower recovery at levels 2–3 (84 %, 77 % vs 89 %, 87 %).
+  level 3 A* 4.55 vs Greedy 5.32), and has lower recovery at levels 2–3 (84 %, 77 % vs 89 %, 87 %).
 - Part of A*/Greedy's saving comes from pruning children with h = ∞ (an unfixable duplicate),
   reported separately as `nodes_pruned`; UCS never prunes. On exhausted searches UCS's "expanded"
   includes every 3-correction leaf.
@@ -77,7 +77,7 @@ means BT+FC+AC-3 is not always faster in seconds than BT+FC on easy (35-given) p
 | 3 | 87 % | 0 % | 0 % | 0 % | 87 % |
 | 4 | 0 % | 0 % | 0 % | 0 % | 0 % |
 
-Both random arms get up to 200 goal tests per puzzle; A* needs on average 2.1 / 4.5 / 12.2
+Both random arms get up to 201 goal tests (the read grid plus 200 random draws) per puzzle; A* needs on average 2.1 / 4.5 / 12.2
 (max 48) at levels 1 / 2 / 3. "Random
 within candidates" may only choose the same 15 cells and top-3 alternatives the search uses, so
 the gap to NN-guided (66 vs 95 %, 9 vs 89 %, 0 vs 87 %) is the value of ordering corrections by

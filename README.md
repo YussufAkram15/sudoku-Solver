@@ -42,7 +42,7 @@ Run these from the repository root with the venv active. Times are from a 12-cor
 python make_data.py        # download MNIST, split, generate the puzzle bank  (~10 s + download, which
                            #   took 1-19 min depending on the mirror)
 python train.py            # CNN + logistic regression, calibration, digit pools    (~1 min)
-pytest                     # 100 tests                                               (~20 s)
+pytest                     # 100 tests                                               (~30 s)
 python run_demo.py         # integrated demo: --seed 7 --misreads 2 by default       (~5 s)
 python run_experiments.py  # Experiments 1-3 + 100-puzzle recovery study            (~3.5 min)
 ```
